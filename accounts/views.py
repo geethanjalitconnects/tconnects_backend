@@ -24,7 +24,7 @@ def get_tokens_for_user(user):
 
 class RegisterView(APIView):
     """Handle user registration with email and password"""
-    
+    permission_classes = [permissions.AllowAny]
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
 
@@ -74,7 +74,7 @@ class RegisterView(APIView):
 
 class PasswordLoginView(APIView):
     """Handle password-based login"""
-    
+    permission_classes = [permissions.AllowAny]
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
@@ -118,7 +118,7 @@ class PasswordLoginView(APIView):
 
 class SendOTPView(APIView):
     """Send OTP to user's email"""
-    
+    permission_classes = [permissions.AllowAny]
     def post(self, request):
         email = request.data.get("email")
         role = request.data.get("role")
@@ -155,7 +155,7 @@ class SendOTPView(APIView):
 
 class VerifyOTPView(APIView):
     """Verify OTP and log in user"""
-    
+    permission_classes = [permissions.AllowAny]
     def post(self, request):
         email = request.data.get("email")
         code = request.data.get("code")
@@ -228,7 +228,7 @@ class VerifyOTPView(APIView):
 
 class GoogleLoginView(APIView):
     """Handle Google OAuth login"""
-    
+    permission_classes = [permissions.AllowAny]
     def get(self, request):
         """Redirect to Google OAuth"""
         user_type = request.GET.get('user_type', 'candidate')
@@ -295,7 +295,7 @@ class GoogleLoginView(APIView):
 
 class CompleteGoogleRegistrationView(APIView):
     """Complete registration for Google users who need additional info"""
-    
+    permission_classes = [permissions.AllowAny]
     def post(self, request):
         email = request.data.get("email")
         full_name = request.data.get("full_name")
@@ -353,7 +353,7 @@ class MeView(APIView):
 
 class LogoutView(APIView):
     """Handle user logout"""
-    
+    permission_classes = [permissions.AllowAny]
     def post(self, request):
         try:
             refresh_token = request.data.get("refresh")

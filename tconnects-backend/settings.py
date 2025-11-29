@@ -79,7 +79,7 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # URL Configuration
-ROOT_URLCONF = 'tconnects_backend.urls'
+ROOT_URLCONF = 'tconnects-backend.urls'
 
 # Templates
 TEMPLATES = [
@@ -98,12 +98,12 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'tconnects_backend.wsgi.application'
+WSGI_APPLICATION = 'tconnects-backend.wsgi.application'
 
 # Database
 DATABASES = {
     'default': dj_database_url.config(
-        default=config('DATABASE_URL', default='sqlite:///db.sqlite3'),
+        default=config('DATABASE_URL', default='postgresql://tconnects_backend_user:N2LXYAcKpxMD1itseKkxnvCTIMd3RSrS@dpg-d4j9fdf5r7bs73f92jl0-a.oregon-postgres.render.com/tconnects_backend    '),
         conn_max_age=600,
         ssl_require=False
     )

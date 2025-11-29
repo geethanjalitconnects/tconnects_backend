@@ -79,7 +79,7 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # URL Configuration
-ROOT_URLCONF = 'tconnects-backend.urls'
+ROOT_URLCONF = 'tconnects_backend.urls'
 
 # Templates
 TEMPLATES = [
@@ -98,7 +98,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'tconnects-backend.wsgi.application'
+WSGI_APPLICATION = 'tconnects_backend.wsgi.application'
 
 # Database
 DATABASES = {

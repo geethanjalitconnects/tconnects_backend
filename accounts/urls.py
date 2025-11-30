@@ -6,7 +6,6 @@ from .views import (
     SendOTPView,
     VerifyOTPView,
     GoogleLoginView,
-    CompleteGoogleRegistrationView,
     MeView,
     LogoutView
 )
@@ -26,14 +25,14 @@ urlpatterns = [
     
     # Google OAuth
     path('google/login/', GoogleLoginView.as_view(), name='google-login'),
-    path('google/complete/', CompleteGoogleRegistrationView.as_view(), name='google-complete'),
-    
+    # ❌ Removed google/complete (No longer needed)
+
     # User Info
     path('me/', MeView.as_view(), name='me'),
     
     # Logout
     path('logout/', LogoutView.as_view(), name='logout'),
     
-    # Token Refresh
+    # Token Refresh (not used in cookie auth but safe to keep)
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
 ]

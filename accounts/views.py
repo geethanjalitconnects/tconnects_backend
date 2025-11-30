@@ -13,18 +13,62 @@ from .serializers import RegisterSerializer, UserSerializer
 from .utils import generate_otp, send_otp_email
 
 
+# ---------------------------------------------------------
+# COOKIE HELPER
+# ---------------------------------------------------------
+
+def set_auth_cookies(response, tokens):
+    """
+    Store JWT tokens in secure HTTP-only cookies.
+    Used for: Login / OTP Login / Google Login
+    """
+    # access token: 1 hour
+    response.set_cookie(
+        key="access",
+        value=str(tokens["access"]),
+        httponly=True,
+        secure=True,
+        samesite="None",
+        max_age=3600
+    )
+
+    # refresh token: 7 days
+    response.set_cookie(
+        key="refresh",
+        value=str(tokens["refresh"]),
+        httponly=True,
+        secure=True,
+        samesite="None",
+        max_age=3600 * 24 * 7
+    )
+
+    return response
+
+
+def clear_auth_cookies(response):
+    """
+    Removes secure cookies on logout.
+    """
+    response.delete_cookie("access")
+    response.delete_cookie("refresh")
+    return response
+
+
 def get_tokens_for_user(user):
-    """Generate JWT tokens for a user"""
     refresh = RefreshToken.for_user(user)
     return {
-        "access": str(refresh.access_token),
-        "refresh": str(refresh)
+        "access": refresh.access_token,
+        "refresh": refresh,
     }
 
 
+# ---------------------------------------------------------
+# REGISTER
+# ---------------------------------------------------------
+
 class RegisterView(APIView):
-    """Handle user registration with email and password"""
     permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
 
@@ -32,39 +76,35 @@ class RegisterView(APIView):
             email = serializer.validated_data.get("email")
             role = serializer.validated_data.get("role")
 
-            # Check if user already exists
+            # prevent duplicate email
             if User.objects.filter(email=email).exists():
                 return Response(
                     {"errors": {"email": ["User with this email already exists."]}},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Recruiter domain validation
+            # recruiter must use company email
             if role == "recruiter":
                 personal_domains = [
                     'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
                     'aol.com', 'icloud.com', 'mail.com', 'protonmail.com'
                 ]
-                domain = email.split("@")[-1].lower()
-                if domain in personal_domains:
+                if email.split("@")[-1].lower() in personal_domains:
                     return Response(
                         {"errors": {"email": ["Recruiters must use a company email address."]}},
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
-            # Create user
+            # create user
             user = serializer.save()
-            
-            # Generate tokens
             tokens = get_tokens_for_user(user)
-            
-            return Response(
-                {
-                    "tokens": tokens,
-                    "user": UserSerializer(user).data
-                },
-                status=status.HTTP_201_CREATED
-            )
+
+            # send cookie response
+            response = Response({
+                "user": UserSerializer(user).data
+            }, status=status.HTTP_201_CREATED)
+
+            return set_auth_cookies(response, tokens)
 
         return Response(
             {"errors": serializer.errors},
@@ -72,9 +112,13 @@ class RegisterView(APIView):
         )
 
 
+# ---------------------------------------------------------
+# PASSWORD LOGIN
+# ---------------------------------------------------------
+
 class PasswordLoginView(APIView):
-    """Handle password-based login"""
     permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
@@ -87,65 +131,58 @@ class PasswordLoginView(APIView):
             )
 
         user = authenticate(request, email=email, password=password)
-        
+
         if user is None:
             return Response(
                 {"detail": "Invalid email or password"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Verify role matches
         if role and user.role != role:
             return Response(
                 {"detail": f"This account is not registered as a {role}"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Admin email check
-        if user.role == "admin" and user.email != settings.ADMIN_EMAIL:
-            return Response(
-                {"detail": "Unauthorized admin access"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
         tokens = get_tokens_for_user(user)
-        
-        return Response({
-            "tokens": tokens,
+
+        # send cookie-based login response
+        response = Response({
             "user": UserSerializer(user).data
         })
 
+        return set_auth_cookies(response, tokens)
+
+
+# ---------------------------------------------------------
+# SEND OTP
+# ---------------------------------------------------------
 
 class SendOTPView(APIView):
-    """Send OTP to user's email"""
     permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         email = request.data.get("email")
         role = request.data.get("role")
-        
-        if not email:
-            return Response(
-                {"detail": "Email is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
-        # Check if user exists
+        if not email:
+            return Response({"detail": "Email is required"}, status=400)
+
         try:
             user = User.objects.get(email=email)
-            
-            # Verify role matches
+
             if role and user.role != role:
                 return Response(
                     {"detail": f"This account is not registered as a {role}"},
-                    status=status.HTTP_403_FORBIDDEN
+                    status=403
                 )
+
         except User.DoesNotExist:
             return Response(
-                {"detail": "No account found with this email. Please register first."},
-                status=status.HTTP_404_NOT_FOUND
+                {"detail": "No account found with this email."},
+                status=404
             )
 
-        # Generate and send OTP
         code = generate_otp()
         OTP.objects.create(email=email, code=code)
         send_otp_email(email, code)
@@ -153,9 +190,13 @@ class SendOTPView(APIView):
         return Response({"detail": "OTP sent successfully"})
 
 
+# ---------------------------------------------------------
+# VERIFY OTP (LOGIN)
+# ---------------------------------------------------------
+
 class VerifyOTPView(APIView):
-    """Verify OTP and log in user"""
     permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         email = request.data.get("email")
         code = request.data.get("code")
@@ -164,92 +205,57 @@ class VerifyOTPView(APIView):
         if not email or not code:
             return Response(
                 {"detail": "Email and OTP are required"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=400
             )
 
-        # Find valid OTP
         try:
-            otp = OTP.objects.filter(
-                email=email,
-                code=code,
-                is_used=False
-            ).latest("created_at")
+            otp = OTP.objects.filter(email=email, code=code, is_used=False).latest("created_at")
         except OTP.DoesNotExist:
-            return Response(
-                {"detail": "Invalid or expired OTP"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "Invalid or expired OTP"}, status=400)
 
-        # Check expiry (10 minutes)
+        # check OTP expiry (10 mins)
         if (timezone.now() - otp.created_at).total_seconds() > 600:
-            return Response(
-                {"detail": "OTP has expired. Please request a new one."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "OTP expired"}, status=400)
 
-        # Mark OTP as used
         otp.is_used = True
         otp.save()
 
-        # Get user
         try:
             user = User.objects.get(email=email)
-            
-            # Verify role matches
+
             if role and user.role != role:
                 return Response(
                     {"detail": f"This account is not registered as a {role}"},
-                    status=status.HTTP_403_FORBIDDEN
+                    status=403
                 )
-        except User.DoesNotExist:
-            return Response(
-                {"detail": "User not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
 
-        # Mark user as verified
+        except User.DoesNotExist:
+            return Response({"detail": "User not found"}, status=404)
+
         user.is_verified = True
         user.save()
 
-        # Admin check
-        if user.role == "admin" and user.email != settings.ADMIN_EMAIL:
-            return Response(
-                {"detail": "Unauthorized admin access"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
         tokens = get_tokens_for_user(user)
 
-        return Response({
-            "tokens": tokens,
+        response = Response({
             "user": UserSerializer(user).data
         })
 
+        return set_auth_cookies(response, tokens)
+
+
+# ---------------------------------------------------------
+# GOOGLE LOGIN
+# ---------------------------------------------------------
 
 class GoogleLoginView(APIView):
-    """Handle Google OAuth login"""
     permission_classes = [permissions.AllowAny]
-    def get(self, request):
-        """Redirect to Google OAuth"""
-        user_type = request.GET.get('user_type', 'candidate')
-        # Store user_type in session for callback
-        request.session['pending_user_type'] = user_type
-        
-        # In production, use django-allauth's redirect
-        # For now, return instruction
-        return Response({
-            "detail": "Configure django-allauth Google provider in settings"
-        })
-    
+
     def post(self, request):
-        """Verify Google ID token"""
         id_token_received = request.data.get("id_token")
-        
+
         if not id_token_received:
-            return Response(
-                {"detail": "No ID token provided"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "No ID token provided"}, status=400)
 
         try:
             google_info = id_token.verify_oauth2_token(
@@ -257,18 +263,14 @@ class GoogleLoginView(APIView):
                 google_requests.Request(),
                 settings.SOCIALACCOUNT_PROVIDERS['google']['APP']['client_id']
             )
-        except Exception as e:
-            return Response(
-                {"detail": "Invalid Google token"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        except:
+            return Response({"detail": "Invalid Google token"}, status=400)
 
         email = google_info.get("email")
         full_name = google_info.get("name", "")
         role = request.data.get("role", "candidate")
 
-        # Get or create user
-        user, created = User.objects.get_or_create(
+        user, _ = User.objects.get_or_create(
             email=email,
             defaults={
                 "full_name": full_name,
@@ -277,93 +279,33 @@ class GoogleLoginView(APIView):
             }
         )
 
-        # If user exists but role doesn't match
-        if not created and user.role != role:
-            return Response(
-                {"detail": f"This account is registered as a {user.role}, not {role}"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
         tokens = get_tokens_for_user(user)
-        
-        return Response({
-            "tokens": tokens,
-            "user": UserSerializer(user).data,
-            "new_user": created
-        })
 
-
-class CompleteGoogleRegistrationView(APIView):
-    """Complete registration for Google users who need additional info"""
-    permission_classes = [permissions.AllowAny]
-    def post(self, request):
-        email = request.data.get("email")
-        full_name = request.data.get("full_name")
-        role = request.data.get("role")
-
-        if not (email and role):
-            return Response(
-                {"detail": "Email and role are required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response(
-                {"detail": "User not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        # Recruiter domain check
-        if role == "recruiter":
-            personal_domains = [
-                'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
-                'aol.com', 'icloud.com', 'mail.com', 'protonmail.com'
-            ]
-            domain = email.split("@")[-1].lower()
-            if domain in personal_domains:
-                return Response(
-                    {"detail": "Recruiters must use a company email address"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-        # Update user
-        user.role = role
-        if full_name:
-            user.full_name = full_name
-        user.is_verified = True
-        user.save()
-
-        tokens = get_tokens_for_user(user)
-        
-        return Response({
-            "tokens": tokens,
+        response = Response({
             "user": UserSerializer(user).data
         })
 
+        return set_auth_cookies(response, tokens)
+
+
+# ---------------------------------------------------------
+# /ME (CURRENT LOGGED-IN USER)
+# ---------------------------------------------------------
 
 class MeView(APIView):
-    """Get current user information"""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         return Response(UserSerializer(request.user).data)
 
 
+# ---------------------------------------------------------
+# LOGOUT
+# ---------------------------------------------------------
+
 class LogoutView(APIView):
-    """Handle user logout"""
     permission_classes = [permissions.AllowAny]
+
     def post(self, request):
-        try:
-            refresh_token = request.data.get("refresh")
-            if refresh_token:
-                token = RefreshToken(refresh_token)
-                token.blacklist()
-        except Exception:
-            pass
-        
-        return Response(
-            {"detail": "Successfully logged out"},
-            status=status.HTTP_200_OK
-        )
+        response = Response({"detail": "Logged out"})
+        return clear_auth_cookies(response)

@@ -16,7 +16,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
 AUTH_USER_MODEL = 'accounts.User'
 
 # URLs
-FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
+FRONTEND_URL = config('FRONTEND_URL', default='https://tconnects-frontend.onrender.com')
 ADMIN_EMAIL = config('ADMIN_EMAIL', default='tconnects@vprotectsecurity.com')
 
 # Applications

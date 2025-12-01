@@ -47,6 +47,12 @@ INSTALLED_APPS = [
     
     # Local apps
     'accounts',
+    'profiles',
+    'jobs',
+    'internships',
+    'applications',
+
+    
 ]
 
 SITE_ID = 1
@@ -67,6 +73,9 @@ MIDDLEWARE = [
 
 # CORS + COOKIES (For Secure Cookie Authentication)
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = ["*"]
+CORS_ALLOW_METHODS = ["*"]
+
 
 CORS_ALLOWED_ORIGINS = [
     "https://tconnects-frontend.onrender.com",  # your frontend URL

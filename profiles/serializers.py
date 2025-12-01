@@ -1,0 +1,227 @@
+# profiles/serializers.py
+
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from .models import (
+    CandidateProfile,
+    RecruiterBasicProfile,
+    CompanyProfile,
+    FreelancerBasicInfo,
+    FreelancerProfessionalDetails,
+    FreelancerEducation,
+    FreelancerAvailability,
+    FreelancerPaymentMethod,
+    FreelancerSocialLinks,
+)
+
+User = get_user_model()
+
+
+# ============================================================
+# USER SERIALIZER (for nested return)
+# ============================================================
+
+class UserMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "email", "full_name", "role"]
+        read_only_fields = fields
+
+
+# ============================================================
+# CANDIDATE PROFILE SERIALIZERS
+# ============================================================
+
+class CandidateProfileSerializer(serializers.ModelSerializer):
+    user = UserMiniSerializer(read_only=True)
+
+    class Meta:
+        model = CandidateProfile
+        fields = [
+            "user",
+            "phone_number",
+            "location",
+            "experience_level",
+            "skills",
+            "bio",
+            "resume",
+            "profile_picture",
+            "updated_at",
+        ]
+        read_only_fields = ["updated_at"]
+
+
+class CandidateResumeUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CandidateProfile
+        fields = ["resume"]
+
+
+class CandidateProfilePictureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CandidateProfile
+        fields = ["profile_picture"]
+
+
+# ============================================================
+# RECRUITER BASIC PROFILE SERIALIZER
+# ============================================================
+
+class RecruiterBasicProfileSerializer(serializers.ModelSerializer):
+    user = UserMiniSerializer(read_only=True)
+
+    class Meta:
+        model = RecruiterBasicProfile
+        fields = [
+            "user",
+            "full_name",
+            "company_email",
+            "phone_number",
+            "position_in_company",
+            "linkedin_profile",
+            "updated_at",
+        ]
+        read_only_fields = ["updated_at"]
+
+
+# ============================================================
+# COMPANY PROFILE SERIALIZER
+# ============================================================
+
+class CompanyProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyProfile
+        fields = [
+            "company_name",
+            "industry_category",
+            "company_size",
+            "company_location",
+            "company_website",
+            "about_company",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at"]
+
+
+# ============================================================
+# FREELANCER SERIALIZERS
+# ============================================================
+
+# -------------- BASIC INFO --------------
+class FreelancerBasicInfoSerializer(serializers.ModelSerializer):
+    user = UserMiniSerializer(read_only=True)
+
+    class Meta:
+        model = FreelancerBasicInfo
+        fields = [
+            "user",
+            "full_name",
+            "phone_number",
+            "location",
+            "languages_known",
+            "profile_picture",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at"]
+
+
+class FreelancerProfilePictureUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FreelancerBasicInfo
+        fields = ["profile_picture"]
+
+
+# -------------- PROFESSIONAL DETAILS --------------
+class FreelancerProfessionalDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FreelancerProfessionalDetails
+        fields = [
+            "area_of_expertise",
+            "years_of_experience",
+            "job_category",
+            "professional_bio",
+            "updated_at",
+        ]
+        read_only_fields = ["updated_at"]
+
+
+# -------------- EDUCATION --------------
+class FreelancerEducationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FreelancerEducation
+        fields = [
+            "id",
+            "degree",
+            "institution",
+            "start_year",
+            "end_year",
+            "description",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+
+# -------------- AVAILABILITY --------------
+class FreelancerAvailabilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FreelancerAvailability
+        fields = [
+            "is_available",
+            "is_occupied",
+            "available_from",
+            "available_to",
+            "time_zone",
+            "available_days",
+            "updated_at",
+        ]
+        read_only_fields = ["updated_at"]
+
+
+# -------------- PAYMENT METHODS --------------
+class FreelancerPaymentMethodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FreelancerPaymentMethod
+        fields = [
+            "id",
+            "payment_type",
+            "upi_id",
+            "bank_account_number",
+            "ifsc_code",
+            "account_holder_name",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+
+# -------------- SOCIAL LINKS --------------
+class FreelancerSocialLinksSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FreelancerSocialLinks
+        fields = [
+            "linkedin_url",
+            "github_url",
+            "portfolio_url",
+            "rating",
+            "updated_at",
+        ]
+        read_only_fields = ["updated_at"]
+
+
+# ============================================================
+# FREELANCER MERGED PREVIEW SERIALIZER (FOR PREVIEW PAGE)
+# ============================================================
+
+class FreelancerProfilePreviewSerializer(serializers.Serializer):
+    """
+    This serializer is NOT tied to a model.
+    It merges all freelancer info to match your Preview screen.
+    """
+    basic_info = FreelancerBasicInfoSerializer()
+    professional_details = FreelancerProfessionalDetailsSerializer()
+    education = FreelancerEducationSerializer(many=True)
+    availability = FreelancerAvailabilitySerializer()
+    payment_methods = FreelancerPaymentMethodSerializer(many=True)
+    social_links = FreelancerSocialLinksSerializer()
+

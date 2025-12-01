@@ -13,44 +13,45 @@ from .serializers import RegisterSerializer, UserSerializer
 from .utils import generate_otp, send_otp_email
 
 
-# ---------------------------------------------------------
-# COOKIE HELPER
-# ---------------------------------------------------------
+# ==========================================================
+# COOKIE HELPERS
+# ==========================================================
+
+COOKIE_DOMAIN = ".onrender.com"   # REQUIRED FOR RENDER CROSS-DOMAIN
+
 
 def set_auth_cookies(response, tokens):
-    """
-    Store JWT tokens in secure HTTP-only cookies.
-    Used for: Login / OTP Login / Google Login
-    """
-    # access token: 1 hour
+    """Set secure HttpOnly cookies for access & refresh tokens."""
+
+    # ACCESS TOKEN (1 hr)
     response.set_cookie(
         key="access",
         value=str(tokens["access"]),
         httponly=True,
         secure=True,
         samesite="None",
-        max_age=3600
+        domain=COOKIE_DOMAIN,
+        max_age=3600,
     )
 
-    # refresh token: 7 days
+    # REFRESH TOKEN (7 days)
     response.set_cookie(
         key="refresh",
         value=str(tokens["refresh"]),
         httponly=True,
         secure=True,
         samesite="None",
-        max_age=3600 * 24 * 7
+        domain=COOKIE_DOMAIN,
+        max_age=3600 * 24 * 7,
     )
 
     return response
 
 
 def clear_auth_cookies(response):
-    """
-    Removes secure cookies on logout.
-    """
-    response.delete_cookie("access")
-    response.delete_cookie("refresh")
+    """Remove cookies on logout."""
+    response.delete_cookie("access", domain=COOKIE_DOMAIN, samesite="None")
+    response.delete_cookie("refresh", domain=COOKIE_DOMAIN, samesite="None")
     return response
 
 
@@ -62,9 +63,9 @@ def get_tokens_for_user(user):
     }
 
 
-# ---------------------------------------------------------
+# ==========================================================
 # REGISTER
-# ---------------------------------------------------------
+# ==========================================================
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -73,48 +74,47 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
 
         if serializer.is_valid():
+
             email = serializer.validated_data.get("email")
             role = serializer.validated_data.get("role")
 
-            # prevent duplicate email
             if User.objects.filter(email=email).exists():
                 return Response(
                     {"errors": {"email": ["User with this email already exists."]}},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # recruiter must use company email
+            # Recruiters must use company email
             if role == "recruiter":
                 personal_domains = [
-                    'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
-                    'aol.com', 'icloud.com', 'mail.com', 'protonmail.com'
+                    "gmail.com", "yahoo.com", "hotmail.com", "outlook.com",
+                    "aol.com", "icloud.com", "mail.com", "protonmail.com"
                 ]
                 if email.split("@")[-1].lower() in personal_domains:
                     return Response(
-                        {"errors": {"email": ["Recruiters must use a company email address."]}},
-                        status=status.HTTP_400_BAD_REQUEST
+                        {"errors": {"email": ["Recruiters must use a company email."]}},
+                        status=status.HTTP_400_BAD_REQUEST,
                     )
 
-            # create user
             user = serializer.save()
             tokens = get_tokens_for_user(user)
 
-            # send cookie response
-            response = Response({
-                "user": UserSerializer(user).data
-            }, status=status.HTTP_201_CREATED)
+            response = Response(
+                {"user": UserSerializer(user).data},
+                status=status.HTTP_201_CREATED,
+            )
 
             return set_auth_cookies(response, tokens)
 
         return Response(
             {"errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
 
-# ---------------------------------------------------------
+# ==========================================================
 # PASSWORD LOGIN
-# ---------------------------------------------------------
+# ==========================================================
 
 class PasswordLoginView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -127,7 +127,7 @@ class PasswordLoginView(APIView):
         if not email or not password:
             return Response(
                 {"detail": "Email and password are required"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=400,
             )
 
         user = authenticate(request, email=email, password=password)
@@ -135,28 +135,24 @@ class PasswordLoginView(APIView):
         if user is None:
             return Response(
                 {"detail": "Invalid email or password"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=400,
             )
 
         if role and user.role != role:
             return Response(
                 {"detail": f"This account is not registered as a {role}"},
-                status=status.HTTP_403_FORBIDDEN
+                status=403,
             )
 
         tokens = get_tokens_for_user(user)
 
-        # send cookie-based login response
-        response = Response({
-            "user": UserSerializer(user).data
-        })
-
+        response = Response({"user": UserSerializer(user).data})
         return set_auth_cookies(response, tokens)
 
 
-# ---------------------------------------------------------
+# ==========================================================
 # SEND OTP
-# ---------------------------------------------------------
+# ==========================================================
 
 class SendOTPView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -174,13 +170,13 @@ class SendOTPView(APIView):
             if role and user.role != role:
                 return Response(
                     {"detail": f"This account is not registered as a {role}"},
-                    status=403
+                    status=403,
                 )
 
         except User.DoesNotExist:
             return Response(
-                {"detail": "No account found with this email."},
-                status=404
+                {"detail": "No account found with this email"},
+                status=404,
             )
 
         code = generate_otp()
@@ -190,9 +186,9 @@ class SendOTPView(APIView):
         return Response({"detail": "OTP sent successfully"})
 
 
-# ---------------------------------------------------------
-# VERIFY OTP (LOGIN)
-# ---------------------------------------------------------
+# ==========================================================
+# VERIFY OTP LOGIN
+# ==========================================================
 
 class VerifyOTPView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -203,17 +199,19 @@ class VerifyOTPView(APIView):
         role = request.data.get("role")
 
         if not email or not code:
-            return Response(
-                {"detail": "Email and OTP are required"},
-                status=400
-            )
+            return Response({"detail": "Email and OTP required"}, status=400)
 
         try:
-            otp = OTP.objects.filter(email=email, code=code, is_used=False).latest("created_at")
+            otp = OTP.objects.filter(
+                email=email,
+                code=code,
+                is_used=False
+            ).latest("created_at")
+
         except OTP.DoesNotExist:
             return Response({"detail": "Invalid or expired OTP"}, status=400)
 
-        # check OTP expiry (10 mins)
+        # Check expiry (10 min)
         if (timezone.now() - otp.created_at).total_seconds() > 600:
             return Response({"detail": "OTP expired"}, status=400)
 
@@ -226,7 +224,7 @@ class VerifyOTPView(APIView):
             if role and user.role != role:
                 return Response(
                     {"detail": f"This account is not registered as a {role}"},
-                    status=403
+                    status=403,
                 )
 
         except User.DoesNotExist:
@@ -237,31 +235,29 @@ class VerifyOTPView(APIView):
 
         tokens = get_tokens_for_user(user)
 
-        response = Response({
-            "user": UserSerializer(user).data
-        })
-
+        response = Response({"user": UserSerializer(user).data})
         return set_auth_cookies(response, tokens)
 
 
-# ---------------------------------------------------------
+# ==========================================================
 # GOOGLE LOGIN
-# ---------------------------------------------------------
+# ==========================================================
 
 class GoogleLoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+
         id_token_received = request.data.get("id_token")
 
         if not id_token_received:
-            return Response({"detail": "No ID token provided"}, status=400)
+            return Response({"detail": "Missing Google ID token"}, status=400)
 
         try:
             google_info = id_token.verify_oauth2_token(
                 id_token_received,
                 google_requests.Request(),
-                settings.SOCIALACCOUNT_PROVIDERS['google']['APP']['client_id']
+                settings.SOCIALACCOUNT_PROVIDERS["google"]["APP"]["client_id"],
             )
         except:
             return Response({"detail": "Invalid Google token"}, status=400)
@@ -275,22 +271,19 @@ class GoogleLoginView(APIView):
             defaults={
                 "full_name": full_name,
                 "role": role,
-                "is_verified": True
-            }
+                "is_verified": True,
+            },
         )
 
         tokens = get_tokens_for_user(user)
 
-        response = Response({
-            "user": UserSerializer(user).data
-        })
-
+        response = Response({"user": UserSerializer(user).data})
         return set_auth_cookies(response, tokens)
 
 
-# ---------------------------------------------------------
-# /ME (CURRENT LOGGED-IN USER)
-# ---------------------------------------------------------
+# ==========================================================
+# CURRENT LOGGED-IN USER
+# ==========================================================
 
 class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -299,9 +292,9 @@ class MeView(APIView):
         return Response(UserSerializer(request.user).data)
 
 
-# ---------------------------------------------------------
+# ==========================================================
 # LOGOUT
-# ---------------------------------------------------------
+# ==========================================================
 
 class LogoutView(APIView):
     permission_classes = [permissions.AllowAny]

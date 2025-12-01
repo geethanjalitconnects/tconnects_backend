@@ -3,6 +3,7 @@ import dj_database_url
 import os
 from decouple import config, Csv
 from datetime import timedelta
+from corsheaders.defaults import default_headers
 
 # Build paths
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -73,8 +74,21 @@ MIDDLEWARE = [
 
 # CORS + COOKIES (For Secure Cookie Authentication)
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = ["*"]
-CORS_ALLOW_METHODS = ["*"]
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "content-type",
+    "authorization",
+    "x-requested-with",
+    "x-csrftoken",
+]
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS"
+]
+
 
 
 CORS_ALLOWED_ORIGINS = [

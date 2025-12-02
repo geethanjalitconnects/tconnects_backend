@@ -67,43 +67,36 @@ class JobDetailSerializer(serializers.ModelSerializer):
         ]
 
 
-# ============================================================
-# 3. CREATE / UPDATE SERIALIZER (Recruiter Dashboard)
-# ============================================================
-
 class JobCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Job
         fields = [
             "title",
-            "company_name",
             "location",
             "experience_range",
             "salary_range",
             "employment_type",
             "category",
-            "short_description",
             "full_description",
             "responsibilities",
-            "requirements",
             "skills",
             "eligible_degrees",
             "application_deadline",
-            "is_active",
         ]
         extra_kwargs = {
-            "company_name": {"required": False},
-            "short_description": {"required": False},
-            "requirements": {"required": False},
+            "responsibilities": {"required": False},
+            "skills": {"required": False},
             "eligible_degrees": {"required": False},
+            "application_deadline": {"required": False},
         }
 
     def validate(self, attrs):
-        list_fields = ["responsibilities", "requirements", "skills", "eligible_degrees"]
+        """Ensure list fields come in as lists"""
+        list_fields = ["responsibilities", "skills", "eligible_degrees"]
 
         for field in list_fields:
-            value = attrs.get(field)
-            if value is not None and not isinstance(value, list):
+            val = attrs.get(field)
+            if val is not None and not isinstance(val, list):
                 raise serializers.ValidationError({
                     field: "This field must be a list."
                 })
@@ -113,12 +106,17 @@ class JobCreateUpdateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         recruiter = self.context["request"].user
 
-        # Auto-fill company name from Recruiter's Company Profile
+        # Auto-fill company information (backend only)
         company = getattr(recruiter, "company_profile", None)
-        validated_data["company_name"] = company.company_name if company else "Unknown Company"
+        validated_data["company_name"] = (
+            company.company_name if company else "Unknown Company"
+        )
 
-        # Auto-generate short description
+        # Auto-generate short description (120 chars)
         full_desc = validated_data.get("full_description", "")
         validated_data["short_description"] = full_desc[:120]
 
-        return Job.objects.create(recruiter=recruiter, **validated_data)
+        # Add recruiter into validated_data (avoids duplicate argument)
+        validated_data["recruiter"] = recruiter
+
+        return Job.objects.create(**validated_data)

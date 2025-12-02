@@ -33,14 +33,6 @@ class IsRecruiter(permissions.BasePermission):
 # ======================================================
 
 class JobListView(ListAPIView):
-    """
-    GET /api/jobs/
-    Supports filters:
-    - ?search=python
-    - ?location=Chennai
-    - ?category=Risk Management
-    - ?employment_type=full_time
-    """
     queryset = Job.objects.filter(is_active=True)
     serializer_class = JobListSerializer
 
@@ -76,9 +68,6 @@ class JobListView(ListAPIView):
 # ======================================================
 
 class JobDetailView(RetrieveAPIView):
-    """
-    GET /api/jobs/<id>/
-    """
     queryset = Job.objects.filter(is_active=True)
     serializer_class = JobDetailSerializer
     lookup_field = "id"
@@ -93,8 +82,8 @@ class JobCreateView(CreateAPIView):
     serializer_class = JobCreateUpdateSerializer
 
     def perform_create(self, serializer):
-        serializer.save(recruiter=self.request.user)
-
+        # DO NOT pass recruiter here. Serializer handles recruiter.
+        serializer.save()
 
 
 # ======================================================
@@ -102,10 +91,6 @@ class JobCreateView(CreateAPIView):
 # ======================================================
 
 class JobUpdateView(UpdateAPIView):
-    """
-    PATCH /api/jobs/<id>/update/
-    Only the recruiter who created the job can update it.
-    """
     permission_classes = [IsRecruiter]
     serializer_class = JobCreateUpdateSerializer
     lookup_field = "id"
@@ -119,10 +104,6 @@ class JobUpdateView(UpdateAPIView):
 # ======================================================
 
 class JobDeleteView(DestroyAPIView):
-    """
-    DELETE /api/jobs/<id>/delete/
-    Only the recruiter who created the job can delete it.
-    """
     permission_classes = [IsRecruiter]
     lookup_field = "id"
 
@@ -135,10 +116,6 @@ class JobDeleteView(DestroyAPIView):
 # ======================================================
 
 class RecruiterJobListView(ListAPIView):
-    """
-    GET /api/jobs/my-jobs/
-    Returns all jobs posted by the recruiter.
-    """
     permission_classes = [IsRecruiter]
     serializer_class = JobListSerializer
 

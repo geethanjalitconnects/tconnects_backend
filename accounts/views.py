@@ -28,36 +28,33 @@ def get_tokens_for_user(user):
 
 
 def set_auth_cookies(response, tokens):
-    """Attach secure cookies for authentication"""
 
-    # ⭐ IMPORTANT: Allow cross-service cookies on Render
-    domain = "tconnects-backend.onrender.com"
+    domain = "tconnects-backend.onrender.com"  # FIXED DOMAIN
 
-    # Access token — 1 hour
     response.set_cookie(
         key="access",
         value=str(tokens["access"]),
         httponly=True,
         secure=True,
         samesite="None",
-        max_age=3600,
         path="/",
         domain=domain,
+        max_age=3600
     )
 
-    # Refresh token — 7 days
     response.set_cookie(
         key="refresh",
         value=str(tokens["refresh"]),
         httponly=True,
         secure=True,
         samesite="None",
-        max_age=3600 * 24 * 7,
         path="/",
         domain=domain,
+        max_age=604800
     )
 
     return response
+
 
 
 

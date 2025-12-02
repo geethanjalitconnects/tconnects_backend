@@ -72,11 +72,6 @@ class JobDetailSerializer(serializers.ModelSerializer):
 # ============================================================
 
 class JobCreateUpdateSerializer(serializers.ModelSerializer):
-    """
-    Used by recruiters to post new jobs and edit their jobs.
-    Handles JSON list fields cleanly.
-    """
-
     class Meta:
         model = Job
         fields = [
@@ -96,41 +91,34 @@ class JobCreateUpdateSerializer(serializers.ModelSerializer):
             "application_deadline",
             "is_active",
         ]
-
-    # ----------------------
-    # VALIDATION
-    # ----------------------
+        extra_kwargs = {
+            "company_name": {"required": False},
+            "short_description": {"required": False},
+            "requirements": {"required": False},
+            "eligible_degrees": {"required": False},
+        }
 
     def validate(self, attrs):
-        """
-        Custom validation for JSON list fields + string fields.
-        """
-
-        # Ensure JSON list fields are actually lists
         list_fields = ["responsibilities", "requirements", "skills", "eligible_degrees"]
 
         for field in list_fields:
             value = attrs.get(field)
             if value is not None and not isinstance(value, list):
                 raise serializers.ValidationError({
-                    field: "This field must be a list, e.g. ['Python','Django']"
+                    field: "This field must be a list."
                 })
 
         return attrs
 
     def create(self, validated_data):
-        """
-        Recruiter is auto-set from view.
-        """
         recruiter = self.context["request"].user
+
+        # Auto-fill company name from Recruiter's Company Profile
+        company = getattr(recruiter, "company_profile", None)
+        validated_data["company_name"] = company.company_name if company else "Unknown Company"
+
+        # Auto-generate short description
+        full_desc = validated_data.get("full_description", "")
+        validated_data["short_description"] = full_desc[:120]
+
         return Job.objects.create(recruiter=recruiter, **validated_data)
-
-    def update(self, instance, validated_data):
-        """
-        Update job fields cleanly.
-        """
-        for key, value in validated_data.items():
-            setattr(instance, key, value)
-
-        instance.save()
-        return instance

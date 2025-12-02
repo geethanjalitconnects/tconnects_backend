@@ -89,15 +89,12 @@ class JobDetailView(RetrieveAPIView):
 # ======================================================
 
 class JobCreateView(CreateAPIView):
-    """
-    POST /api/jobs/create/
-    Recruiter creates a job.
-    """
     permission_classes = [IsRecruiter]
     serializer_class = JobCreateUpdateSerializer
 
     def perform_create(self, serializer):
         serializer.save(recruiter=self.request.user)
+
 
 
 # ======================================================

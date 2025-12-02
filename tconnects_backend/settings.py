@@ -96,9 +96,6 @@ CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = "None"
 CSRF_COOKIE_SAMESITE = "None"
 
-# ⭐ THIS IS THE MOST IMPORTANT FIX
-SESSION_COOKIE_DOMAIN = ".onrender.com"
-CSRF_COOKIE_DOMAIN = ".onrender.com"
 
 # URL Configuration
 ROOT_URLCONF = 'tconnects_backend.urls'

@@ -11,13 +11,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Security
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-_&t*lyfepo%s6dvc4_(w(jg4@!pb!u@0m@-k38h-*)g52qg=ga')
 DEBUG = config('DEBUG', default=True, cast=bool)
+
 ALLOWED_HOSTS = [
-    "tconnects-backend.onrender.com",     # backend URL
-    "tconnects-frontend.onrender.com",    # frontend URL
+    "tconnects-backend.onrender.com",
+    "tconnects-frontend.onrender.com",
     "localhost",
     "127.0.0.1",
 ]
-
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
@@ -26,7 +26,7 @@ AUTH_USER_MODEL = 'accounts.User'
 FRONTEND_URL = config('FRONTEND_URL', default='https://tconnects-frontend.onrender.com')
 ADMIN_EMAIL = config('ADMIN_EMAIL', default='tconnects@vprotectsecurity.com')
 
-# Applications
+# Installed Apps
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -35,7 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
-    
+
     # Third party
     'rest_framework',
     'rest_framework_simplejwt',
@@ -45,15 +45,13 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
-    
+
     # Local apps
     'accounts',
     'profiles',
     'jobs',
     'internships',
     'applications',
-
-    
 ]
 
 SITE_ID = 1
@@ -72,38 +70,35 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
-# CORS + COOKIES (For Secure Cookie Authentication)
+# -------------------------------
+# CORS + COOKIE CONFIG
+# -------------------------------
 CORS_ALLOW_CREDENTIALS = True
+
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "content-type",
     "authorization",
     "x-requested-with",
     "x-csrftoken",
 ]
-CORS_ALLOW_METHODS = [
-    "GET",
-    "POST",
-    "PUT",
-    "PATCH",
-    "DELETE",
-    "OPTIONS"
-]
-
-
 
 CORS_ALLOWED_ORIGINS = [
-    "https://tconnects-frontend.onrender.com",  # your frontend URL
+    "https://tconnects-frontend.onrender.com",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://tconnects-frontend.onrender.com",
 ]
 
+# ⭐ ALLOW COOKIES ACROSS ONRENDER *
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = "None"
 CSRF_COOKIE_SAMESITE = "None"
 
+# ⭐ THIS IS THE MOST IMPORTANT FIX
+SESSION_COOKIE_DOMAIN = ".onrender.com"
+CSRF_COOKIE_DOMAIN = ".onrender.com"
 
 # URL Configuration
 ROOT_URLCONF = 'tconnects_backend.urls'
@@ -130,7 +125,7 @@ WSGI_APPLICATION = 'tconnects_backend.wsgi.application'
 # Database
 DATABASES = {
     'default': dj_database_url.config(
-        default=config('DATABASE_URL', default='postgresql://tconnects_backend_user:N2LXYAcKpxMD1itseKkxnvCTIMd3RSrS@dpg-d4j9fdf5r7bs73f92jl0-a.oregon-postgres.render.com/tconnects_backend    '),
+        default=config('DATABASE_URL', default='postgresql://tconnects_backend_user:N2LXYAcKpxMD1itseKkxnvCTIMd3RSrS@dpg-d4j9fdf5r7bs73f92jl0-a.oregon-postgres.render.com/tconnects_backend'),
         conn_max_age=600,
         ssl_require=False
     )
@@ -138,22 +133,13 @@ DATABASES = {
 
 # Password Validation
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': {'min_length': 8}
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 8}},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Email Configuration
+# Email
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.office365.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
@@ -162,6 +148,7 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default='True') == 'True'
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 
+# REST Framework
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "accounts.authentication.CookieJWTAuthentication",
@@ -179,15 +166,10 @@ REST_FRAMEWORK = {
     ],
 }
 
-
 # JWT Settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(
-        minutes=config('ACCESS_TOKEN_MINUTES', default=60, cast=int)
-    ),
-    'REFRESH_TOKEN_LIFETIME': timedelta(
-        days=config('REFRESH_TOKEN_DAYS', default=7, cast=int)
-    ),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('ACCESS_TOKEN_MINUTES', default=60, cast=int)),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=config('REFRESH_TOKEN_DAYS', default=7, cast=int)),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
@@ -199,7 +181,7 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
 }
 
-# Django Allauth
+# Allauth
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
@@ -207,7 +189,7 @@ ACCOUNT_USERNAME_REQUIRED = False
 SOCIALACCOUNT_QUERY_EMAIL = True
 SOCIALACCOUNT_AUTO_SIGNUP = False
 
-# Google OAuth Configuration
+# Google OAuth
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
@@ -215,35 +197,30 @@ SOCIALACCOUNT_PROVIDERS = {
             'secret': config('GOOGLE_CLIENT_SECRET', default=''),
             'key': ''
         },
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
-        'AUTH_PARAMS': {
-            'access_type': 'online',
-        }
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
     }
 }
 
-# Internationalization
+# Localization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static Files
+# Static
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media Files
+# Media
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Default Auto Field
+# Default auto field
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Security Settings (for production)
+# Security Settings
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True

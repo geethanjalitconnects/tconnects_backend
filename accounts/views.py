@@ -31,7 +31,7 @@ def set_auth_cookies(response, tokens):
     """Attach secure cookies for authentication"""
 
     # ⭐ IMPORTANT: Allow cross-service cookies on Render
-    domain = ".onrender.com"
+    domain = "tconnects-backend.onrender.com"
 
     # Access token — 1 hour
     response.set_cookie(

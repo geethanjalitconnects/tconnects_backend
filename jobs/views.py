@@ -73,16 +73,17 @@ class JobDetailView(RetrieveAPIView):
     lookup_field = "id"
 
     def get(self, request, *args, **kwargs):
-        slug = kwargs.get("slug", None)
+        slug = kwargs.get("slug")
 
         if slug:
             try:
-                job_id = int(slug.split("-")[-1])  # last part = actual ID
+                job_id = int(slug.split("-")[-1])  # extract final number
                 self.kwargs["id"] = job_id
             except:
                 return Response({"error": "Invalid job URL"}, status=400)
 
         return super().get(request, *args, **kwargs)
+
 
 
 

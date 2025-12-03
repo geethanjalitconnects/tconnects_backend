@@ -72,6 +72,20 @@ class JobDetailView(RetrieveAPIView):
     serializer_class = JobDetailSerializer
     lookup_field = "id"
 
+    def get(self, request, *args, **kwargs):
+        slug = kwargs.get("slug", None)
+
+        if slug:
+            try:
+                job_id = int(slug.split("-")[-1])  # last part = actual ID
+                self.kwargs["id"] = job_id
+            except:
+                return Response({"error": "Invalid job URL"}, status=400)
+
+        return super().get(request, *args, **kwargs)
+
+
+
 
 # ======================================================
 # RECRUITER — CREATE JOB

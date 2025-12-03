@@ -221,3 +221,17 @@ class SavedInternshipSerializer(serializers.ModelSerializer):
         model = SavedInternship
         fields = ("id", "internship", "internship_id", "saved_on")
         read_only_fields = ("id", "saved_on", "internship")
+# ============================================================
+# INTERNSHIP STATUS UPDATE (MISSING — NOW ADDED)
+# ============================================================
+
+class InternshipApplicationStatusUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InternshipApplication
+        fields = ["status"]
+
+    def update(self, instance, validated_data):
+        instance.status = validated_data["status"]
+        instance.status_updated_at = timezone.now()
+        instance.save()
+        return instance

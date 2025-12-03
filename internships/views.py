@@ -90,15 +90,13 @@ class InternshipDetailView(RetrieveAPIView):
 # ======================================================
 
 class InternshipCreateView(CreateAPIView):
-    """
-    POST /api/internships/create/
-    Recruiter creates internship.
-    """
     permission_classes = [IsRecruiter]
     serializer_class = InternshipCreateUpdateSerializer
 
     def perform_create(self, serializer):
-        serializer.save(recruiter=self.request.user)
+        serializer.save()   # ← FIXED HERE
+
+
 
 
 # ======================================================

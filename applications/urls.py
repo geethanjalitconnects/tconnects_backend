@@ -1,3 +1,5 @@
+# applications/urls.py
+
 from django.urls import path
 from .views import (
     ApplyJobView,
@@ -10,25 +12,29 @@ from .views import (
     RecruiterInternshipApplicantsView,
 
     UpdateJobApplicationStatusView,
-    UpdateInternshipApplicationStatusView,
-
-    # Saved Jobs
+    UpdateInternshipApplicationStatusView
+    
+    
+)
+from .views import (
+    SavedJobsListView,
+    AddSavedJobView,
+    RemoveSavedJobView
+)
+from .views import (
     SavedJobsListView,
     AddSavedJobView,
     RemoveSavedJobView,
-
-    # Saved Internships
     SavedInternshipsListView,
     AddSavedInternshipView,
     RemoveSavedInternshipView,
 )
-
 urlpatterns = [
 
     # ---------------------------------------------------------
     # CANDIDATE ACTIONS
     # ---------------------------------------------------------
-
+    
     # Apply
     path("job/apply/", ApplyJobView.as_view(), name="apply-job"),
     path("internship/apply/", ApplyInternshipView.as_view(), name="apply-internship"),
@@ -41,7 +47,7 @@ urlpatterns = [
     # ---------------------------------------------------------
     # RECRUITER ACTIONS
     # ---------------------------------------------------------
-
+    
     # View applicants
     path("job/<int:job_id>/applicants/", RecruiterJobApplicantsView.as_view(), name="recruiter-job-applicants"),
     path("internship/<int:internship_id>/applicants/", RecruiterInternshipApplicantsView.as_view(), name="recruiter-internship-applicants"),
@@ -49,18 +55,12 @@ urlpatterns = [
     # Update status
     path("job/<int:id>/status/", UpdateJobApplicationStatusView.as_view(), name="update-job-application-status"),
     path("internship/<int:id>/status/", UpdateInternshipApplicationStatusView.as_view(), name="update-internship-application-status"),
-
-    # ---------------------------------------------------------
-    # SAVED JOBS
-    # ---------------------------------------------------------
     path("saved-jobs/", SavedJobsListView.as_view()),
     path("saved-jobs/add/", AddSavedJobView.as_view()),
     path("saved-jobs/remove/<int:job_id>/", RemoveSavedJobView.as_view()),
-
-    # ---------------------------------------------------------
-    # SAVED INTERNSHIPS
-    # ---------------------------------------------------------
+    
     path("saved-internships/", SavedInternshipsListView.as_view(), name="saved-internships"),
     path("saved-internships/add/", AddSavedInternshipView.as_view(), name="saved-internships-add"),
     path("saved-internships/remove/<int:internship_id>/", RemoveSavedInternshipView.as_view(), name="saved-internships-remove"),
+
 ]

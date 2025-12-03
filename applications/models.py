@@ -146,9 +146,21 @@ class SavedJob(models.Model):
     def __str__(self):
         return f"{self.user.email} saved {self.job.title}"
 class SavedInternship(models.Model):
-    candidate = models.ForeignKey(User, on_delete=models.CASCADE)
-    internship = models.ForeignKey(Internship, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="saved_internships"
+    )
+    internship = models.ForeignKey(
+        Internship,
+        on_delete=models.CASCADE,
+        related_name="saved_by"
+    )
     saved_on = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("candidate", "internship")
+        unique_together = ("user", "internship")
+        ordering = ["-saved_on"]
+
+    def __str__(self):
+        return f"{self.user.email} saved {self.internship.title}"

@@ -211,13 +211,18 @@ class InternshipApplicationStatusUpdateSerializer(serializers.ModelSerializer):
         return instance
 class JobSummarySerializer(serializers.ModelSerializer):
     company_name = serializers.SerializerMethodField()
+    posted_on = serializers.SerializerMethodField()
 
     class Meta:
         model = Job
         fields = ("id", "title", "company_name", "location", "posted_on")
 
     def get_company_name(self, obj):
-        return getattr(obj, "company_name", "Company")
+        return obj.company.company_name if obj.company else "Company"
+
+    def get_posted_on(self, obj):
+        return obj.created_at.date()
+
     
 
 class SavedJobSerializer(serializers.ModelSerializer):

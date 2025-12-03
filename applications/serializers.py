@@ -83,6 +83,7 @@ class JobApplicationCreateSerializer(serializers.ModelSerializer):
 # ============================================================
 
 class JobApplicationSerializer(serializers.ModelSerializer):
+    job_id = serializers.IntegerField(source="job.id", read_only=True)
     job_title = serializers.CharField(source="job.title", read_only=True)
     company_name = serializers.CharField(source="job.company_name", read_only=True)
 
@@ -90,6 +91,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
         model = JobApplication
         fields = [
             "id",
+            "job_id",  # ⭐ added for applied status check
             "job_title",
             "company_name",
             "candidate_full_name",
@@ -104,6 +106,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
 
 
 # ============================================================

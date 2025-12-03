@@ -2,7 +2,7 @@
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import permissions, status
+from rest_framework import permissions, status,generics
 from rest_framework.generics import (
     CreateAPIView,
     ListAPIView,
@@ -26,6 +26,8 @@ from jobs.models import Job
 from .models import SavedInternship
 from .serializers import SavedInternshipSerializer
 from internships.models import Internship
+
+
 
 
 # ============================================================

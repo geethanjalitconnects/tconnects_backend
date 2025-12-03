@@ -27,6 +27,7 @@ from .models import SavedInternship
 from .serializers import SavedInternshipSerializer
 from internships.models import Internship
 
+
 # ============================================================
 # PERMISSIONS
 # ============================================================
@@ -212,6 +213,17 @@ class RemoveSavedJobView(APIView):
 
         saved.delete()
         return Response({"detail": "Removed from saved jobs."}, status=204)
+    
+class SavedInternshipListCreateView(generics.ListCreateAPIView):
+    serializer_class = SavedInternshipSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return SavedInternship.objects.filter(candidate=self.request.user)
+
+    def perform_create(self, serializer):
+        return serializer.save(candidate=self.request.user)
+    
 class SavedInternshipsListView(ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = SavedInternshipSerializer

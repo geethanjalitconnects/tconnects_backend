@@ -338,12 +338,11 @@ class InternshipSummarySerializer(serializers.ModelSerializer):
 class SavedInternshipSerializer(serializers.ModelSerializer):
     internship = InternshipSummarySerializer(read_only=True)
     internship_id = serializers.PrimaryKeyRelatedField(
-        write_only=True,
-        queryset=Internship.objects.all(),
-        source="internship"
+        write_only=True, source="internship", queryset=Internship.objects.all()
     )
 
     class Meta:
         model = SavedInternship
         fields = ("id", "internship", "internship_id", "saved_on")
         read_only_fields = ("id", "saved_on", "internship")
+

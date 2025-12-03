@@ -13,6 +13,8 @@ from .views import (
 
     UpdateJobApplicationStatusView,
     UpdateInternshipApplicationStatusView
+    
+    
 )
 from .views import (
     SavedJobsListView,
@@ -60,5 +62,7 @@ urlpatterns = [
     path("saved-internships/", SavedInternshipsListView.as_view(), name="saved-internships"),
     path("saved-internships/add/", AddSavedInternshipView.as_view(), name="saved-internships-add"),
     path("saved-internships/remove/<int:internship_id>/", RemoveSavedInternshipView.as_view(), name="saved-internships-remove"),
+    path("saved-internships/", SavedInternshipListCreateView.as_view(), name="saved-internships"),
+    path("saved-internships/remove/<int:internship_id>/", SavedInternshipRemoveView.as_view(), name="remove-saved-internship"),
 
 ]

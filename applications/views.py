@@ -28,6 +28,7 @@ from .serializers import SavedInternshipSerializer
 from internships.models import Internship
 from .models import JobApplication, InternshipApplication, SavedJob, SavedInternship
 
+
 # ============================================================
 # PERMISSIONS
 # ============================================================

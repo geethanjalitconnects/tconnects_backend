@@ -29,6 +29,8 @@ from .views import (
     AddSavedInternshipView,
     RemoveSavedInternshipView,
 )
+from .views import CandidateDashboardStatsView
+
 urlpatterns = [
 
     # ---------------------------------------------------------

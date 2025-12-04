@@ -325,12 +325,16 @@ class InternshipSummarySerializer(serializers.ModelSerializer):
 class InternshipSummarySerializer(serializers.ModelSerializer):
     company_name = serializers.SerializerMethodField()
 
+    # ⭐ Map posted_on → created_at
+    posted_on = serializers.DateTimeField(source="created_at", read_only=True)
+
     class Meta:
         model = Internship
         fields = ("id", "title", "company_name", "location", "posted_on")
 
     def get_company_name(self, obj):
         return getattr(obj, "company_name", "Company")
+
 
 
 # ---------------------- Saved Internship ----------------------

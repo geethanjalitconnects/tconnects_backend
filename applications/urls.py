@@ -62,5 +62,6 @@ urlpatterns = [
     path("saved-internships/", SavedInternshipsListView.as_view(), name="saved-internships"),
     path("saved-internships/add/", AddSavedInternshipView.as_view(), name="saved-internships-add"),
     path("saved-internships/remove/<int:internship_id>/", RemoveSavedInternshipView.as_view(), name="saved-internships-remove"),
+    path("dashboard/stats/", CandidateDashboardStatsView.as_view()),
 
 ]

@@ -26,6 +26,7 @@ from jobs.models import Job
 from .models import SavedInternship
 from .serializers import SavedInternshipSerializer
 from internships.models import Internship
+from .models import JobApplication, InternshipApplication, SavedJob, SavedInternship
 
 # ============================================================
 # PERMISSIONS
@@ -257,3 +258,25 @@ class RemoveSavedInternshipView(APIView):
 
         saved_item.delete()
         return Response({"detail": "Removed from saved internships."}, status=204)
+
+class CandidateDashboardStatsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        applied_jobs = JobApplication.objects.filter(candidate=user).count()
+        applied_internships = InternshipApplication.objects.filter(candidate=user).count()
+        saved_jobs = SavedJob.objects.filter(user=user).count()
+        saved_internships = SavedInternship.objects.filter(user=user).count()
+
+        # ongoing courses → static for now
+        ongoing_courses = 2  
+
+        return Response({
+            "applied_jobs": applied_jobs,
+            "applied_internships": applied_internships,
+            "saved_jobs": saved_jobs,
+            "saved_internships": saved_internships,
+            "ongoing_courses": ongoing_courses,
+        })

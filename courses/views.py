@@ -137,21 +137,7 @@ def assignment_submit_view(request, assignment_id):
         "score": score
     }
     return Response(resp, status=status.HTTP_200_OK)
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def enroll_course(request, id):
-    course = get_object_or_404(Course, id=id)
-    user = request.user
 
-    # Prevent duplicate enrollment
-    existing = Enrollment.objects.filter(user=user, course=course).first()
-
-    if existing:
-        return Response({"detail": "Already enrolled"}, status=200)
-
-    Enrollment.objects.create(user=user, course=course)
-
-    return Response({"detail": "Enrolled successfully"}, status=201)
 # GET enrolled courses for dashboard
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])

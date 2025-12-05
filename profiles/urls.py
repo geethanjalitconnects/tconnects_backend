@@ -53,6 +53,7 @@ urlpatterns = [
     # Basic info
     path("freelancer/basic/", FreelancerBasicInfoView.as_view(), name="freelancer-basic"),
     path("freelancer/upload-picture/", FreelancerProfilePictureUploadView.as_view(), name="freelancer-upload-picture"),
+    
 
     # Professional details
     path("freelancer/professional-details/", FreelancerProfessionalDetailsView.as_view(), name="freelancer-professional"),

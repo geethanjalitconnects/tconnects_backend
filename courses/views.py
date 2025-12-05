@@ -31,15 +31,42 @@ class CourseDetailAPIView(generics.RetrieveAPIView):
 @api_view(["GET"])
 def course_learn_view(request, id, slug):
     course = get_object_or_404(Course, id=id, slug=slug)
-    serializer = CourseDetailSerializer(course, context={"request": request})
-    # Optionally, if you want to return a smaller "learn" payload, build a custom structure:
-    data = serializer.data
-    # We also include whether currently authenticated user is enrolled:
+    data = CourseDetailSerializer(course).data
+
+    user = request.user
     enrolled = False
-    if request.user.is_authenticated:
-        enrolled = Enrollment.objects.filter(user=request.user, course=course).exists()
+    lesson_progress = {}
+    assignment_submissions = {}
+
+    if user.is_authenticated:
+        # check enrollment
+        enrolled = Enrollment.objects.filter(user=user, course=course).exists()
+
+        # get lesson completion map
+        progress = LessonProgress.objects.filter(
+            user=user, lesson__module__course=course
+        )
+        lesson_progress = {p.lesson_id: p.completed for p in progress}
+
+        # get assignment submission map
+        submissions = AssignmentSubmission.objects.filter(
+            user=user, assignment__module__course=course
+        )
+        assignment_submissions = {
+            s.assignment_id: {
+                "submitted": True,
+                "score": s.score,
+                "answers": s.answers,
+            }
+            for s in submissions
+        }
+
     data["enrolled"] = enrolled
+    data["lesson_progress"] = lesson_progress
+    data["assignment_status"] = assignment_submissions
+
     return Response(data)
+
 
 
 # POST enroll

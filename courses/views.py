@@ -31,7 +31,7 @@ class CourseDetailAPIView(generics.RetrieveAPIView):
 
 # Public: learn payload (modules + lessons + assignment) - check enrollment on frontend if necessary
 @api_view(["GET"])
-def course_learn_view(request, id, slug):
+def course_learn_view(request, slug, id):
     course = get_object_or_404(Course, id=id, slug=slug)
     data = CourseDetailSerializer(course).data
 
@@ -137,6 +137,15 @@ def assignment_submit_view(request, assignment_id):
         "score": score
     }
     return Response(resp, status=status.HTTP_200_OK)
+
+# GET check if user is enrolled
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def check_is_enrolled(request, id):
+    course = get_object_or_404(Course, id=id)
+    is_enrolled = Enrollment.objects.filter(user=request.user, course=course).exists()
+    return Response({"enrolled": is_enrolled})
+
 
 # GET enrolled courses for dashboard
 @api_view(["GET"])

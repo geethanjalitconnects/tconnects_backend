@@ -6,6 +6,8 @@ from .models import Course, Module, Lesson, Assignment, AssignmentQuestion, Enro
 from .serializers import CourseListSerializer, CourseDetailSerializer, ModuleSerializer, LessonSerializer, AssignmentSerializer, EnrollmentSerializer, LessonProgressSerializer, AssignmentSubmissionSerializer
 from django.db import transaction
 from django.utils import timezone
+from rest_framework.permissions import IsAuthenticated
+
 
 # Public: list courses
 class CourseListAPIView(generics.ListAPIView):

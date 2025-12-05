@@ -4,7 +4,6 @@ from .models import (
     Enrollment, LessonProgress, AssignmentSubmission
 )
 from django.contrib.auth import get_user_model
-from .serializers_modules import ModuleSerializer
 User = get_user_model()
 
 class LessonSerializer(serializers.ModelSerializer):

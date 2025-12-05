@@ -19,8 +19,12 @@ class AssignmentAdmin(admin.ModelAdmin):
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ("title", "id", "slug", "instructor", "price", "language")
+    list_display = ("title", "instructor", "rating")
     prepopulated_fields = {"slug": ("title",)}
+    fieldsets = (
+        ("Basic Info", {"fields": ("title", "slug", "instructor", "rating", "language")}),
+        ("Course Content", {"fields": ("what_you_will_learn", "requirements", "course_includes")}),
+    )
 
 admin.site.register(Module, ModuleAdmin)
 admin.site.register(Lesson)

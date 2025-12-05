@@ -4,7 +4,7 @@ from .models import (
     Enrollment, LessonProgress, AssignmentSubmission
 )
 from django.contrib.auth import get_user_model
-
+from .serializers_modules import ModuleSerializer
 User = get_user_model()
 
 class LessonSerializer(serializers.ModelSerializer):
@@ -47,7 +47,22 @@ class CourseDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ("id", "title", "slug", "instructor", "description", "price", "rating", "language", "thumbnail", "level", "modules")
+        fields = (
+            "id",
+            "title",
+            "slug",
+            "instructor",
+            "description",
+            "price",
+            "rating",
+            "language",
+            "thumbnail",
+            "level",
+            "what_you_will_learn",   # ⭐ NEW
+            "requirements",           # ⭐ NEW
+            "course_includes",        # ⭐ NEW
+            "modules",
+        )
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):

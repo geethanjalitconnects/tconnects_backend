@@ -135,3 +135,50 @@ def assignment_submit_view(request, assignment_id):
         "score": score
     }
     return Response(resp, status=status.HTTP_200_OK)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def enroll_course(request, id):
+    course = get_object_or_404(Course, id=id)
+    user = request.user
+
+    # Prevent duplicate enrollment
+    existing = Enrollment.objects.filter(user=user, course=course).first()
+
+    if existing:
+        return Response({"detail": "Already enrolled"}, status=200)
+
+    Enrollment.objects.create(user=user, course=course)
+
+    return Response({"detail": "Enrolled successfully"}, status=201)
+# GET enrolled courses for dashboard
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def my_courses_view(request):
+    user = request.user
+    enrollments = Enrollment.objects.filter(user=user).select_related("course")
+
+    data = []
+    for e in enrollments:
+        course = e.course
+        completed_lessons = LessonProgress.objects.filter(
+            user=user, lesson__module__course=course, completed=True
+        ).count()
+
+        total_lessons = Lesson.objects.filter(
+            module__course=course
+        ).count()
+
+        progress = int((completed_lessons / total_lessons) * 100) if total_lessons > 0 else 0
+
+        data.append({
+            "id": course.id,
+            "title": course.title,
+            "thumbnail": course.thumbnail,
+            "slug": course.slug,
+            "progress": progress,
+            "status": "Completed" if progress == 100 else "Ongoing",
+        })
+
+    return Response(data)
+
+

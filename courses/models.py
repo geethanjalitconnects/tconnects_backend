@@ -4,18 +4,38 @@ from django.utils.text import slugify
 from django.core.validators import MinValueValidator
 
 User = get_user_model()
+from django.db import models
+from django.utils.text import slugify
+from django.core.validators import MinValueValidator
+from django.contrib.postgres.fields import JSONField  # Only if using Postgres
+
 
 class Course(models.Model):
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, db_index=True)
     instructor = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True)
+
     price = models.CharField(max_length=64, default="FREE")
     rating = models.FloatField(default=0.0, validators=[MinValueValidator(0.0)])
     language = models.CharField(max_length=64, default="English")
+
     thumbnail = models.URLField(blank=True)
     level = models.CharField(max_length=64, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # ⭐⭐⭐ NEW IMPORTANT FIELDS ⭐⭐⭐
+    
+    # "What you'll learn" – list of bullet points
+    what_you_will_learn = models.JSONField(default=list, blank=True)
+
+    # Requirements – list of prerequisites
+    requirements = models.JSONField(default=list, blank=True)
+
+    # Course includes – dictionary of structured data
+    # Example: {"videos": 15, "modules": 5, "resources": 8, "access": "Lifetime"}
+    course_includes = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -27,6 +47,7 @@ class Course(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.pk})"
+
 
 
 class Module(models.Model):

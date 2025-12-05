@@ -27,7 +27,7 @@ from .models import SavedInternship
 from .serializers import SavedInternshipSerializer
 from internships.models import Internship
 from .models import JobApplication, InternshipApplication, SavedJob, SavedInternship
-
+from courses.models import Enrollment
 
 # ============================================================
 # PERMISSIONS
@@ -271,8 +271,8 @@ class CandidateDashboardStatsView(APIView):
         saved_jobs = SavedJob.objects.filter(user=user).count()
         saved_internships = SavedInternship.objects.filter(user=user).count()
 
-        # ongoing courses → static for now
-        ongoing_courses = 2  
+        # ⭐ REAL ENROLLED COURSE COUNT
+        ongoing_courses = Enrollment.objects.filter(user=user).count()
 
         return Response({
             "applied_jobs": applied_jobs,

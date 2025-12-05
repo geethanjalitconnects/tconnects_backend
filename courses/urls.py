@@ -9,4 +9,10 @@ urlpatterns = [
     path("<int:id>/enroll/", views.enroll_course_view, name="course-enroll"),
     path("lesson/<int:lesson_id>/complete/", views.lesson_complete_view, name="lesson-complete"),
     path("assignment/<int:assignment_id>/submit/", views.assignment_submit_view, name="assignment-submit"),
+    path("<int:id>/enroll/", enroll_course, name="enroll-course"),
+    path("<int:id>/is-enrolled/", check_is_enrolled),
+    path("my-courses/", my_courses_view),
+
+
+
 ]

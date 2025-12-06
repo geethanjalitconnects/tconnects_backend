@@ -137,18 +137,25 @@ class FreelancerAvailabilityAdmin(admin.ModelAdmin):
 # Freelancer Payment Methods
 # ============================================================
 
+# ============================================================
+# Freelancer Payment Methods (FIXED)
+# ============================================================
+
 @admin.register(FreelancerPaymentMethod)
 class FreelancerPaymentMethodAdmin(admin.ModelAdmin):
     list_display = (
         "freelancer",
         "payment_type",
         "upi_id",
-        "account_holder_name",
-        "created_at",
+        "account_number",
+        "ifsc_code",
+        "bank_name",
+        "updated_at",
     )
     list_filter = ("payment_type",)
-    search_fields = ("freelancer__user__email", "upi_id", "account_holder_name")
-    readonly_fields = ("created_at",)
+    search_fields = ("freelancer__user__email", "upi_id", "account_number", "bank_name")
+    readonly_fields = ("updated_at",)
+
 
 
 # ============================================================

@@ -24,9 +24,21 @@ class MockInterviewSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         date = attrs.get("scheduled_date")
         time = attrs.get("scheduled_time")
+
         if date and time:
+            # Create naive datetime
             scheduled_dt = datetime.datetime.combine(date, time)
-            # compare with timezone-aware 'now' in server timezone
-            if scheduled_dt <= timezone.now():
-                raise serializers.ValidationError("Scheduled date/time must be in the future.")
+
+            # Convert naive → aware
+            if timezone.is_naive(scheduled_dt):
+                scheduled_dt = timezone.make_aware(scheduled_dt)
+
+            # Compare aware datetimes
+            now = timezone.now()
+
+            if scheduled_dt <= now:
+                raise serializers.ValidationError(
+                    "Scheduled date/time must be in the future."
+                )
+
         return attrs

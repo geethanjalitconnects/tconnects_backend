@@ -346,3 +346,59 @@ class FreelancerProfilePreviewView(APIView):
         })
 
         return Response(serializer.data, status=200)
+    
+class FreelancerPublishProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        try:
+            basic = FreelancerBasicInfo.objects.get(user=request.user)
+        except FreelancerBasicInfo.DoesNotExist:
+            return Response({"error": "Basic info not completed"}, status=400)
+
+        basic.is_published = True
+        basic.save()
+
+        return Response({"message": "Profile published successfully"}, status=200)
+
+# ============================================================
+# PUBLIC FREELANCER LIST (VISIBLE TO RECRUITERS)
+# ============================================================
+
+class FreelancerPublicListView(ListAPIView):
+    """
+    GET /api/profiles/freelancers/
+    Returns ONLY published freelancers
+    """
+    serializer_class = FreelancerBasicInfoSerializer
+    permission_classes = [permissions.AllowAny]  # Recruiters + public can view
+
+    def get_queryset(self):
+        return FreelancerBasicInfo.objects.filter(is_published=True)
+
+class FreelancerPublicDetailView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, pk):
+        try:
+            basic = FreelancerBasicInfo.objects.get(id=pk, is_published=True)
+        except FreelancerBasicInfo.DoesNotExist:
+            return Response({"error": "Freelancer not found"}, status=404)
+
+        professional = FreelancerProfessionalDetails.objects.filter(user=basic.user).first()
+        education = FreelancerEducation.objects.filter(user=basic.user)
+        availability = FreelancerAvailability.objects.filter(user=basic.user).first()
+        payments = FreelancerPaymentMethod.objects.filter(user=basic.user)
+        social = FreelancerSocialLinks.objects.filter(user=basic.user).first()
+
+        return Response({
+            "basic": FreelancerBasicInfoSerializer(basic).data,
+            "professional": FreelancerProfessionalDetailsSerializer(professional).data if professional else None,
+            "education": FreelancerEducationSerializer(education, many=True).data,
+            "availability": FreelancerAvailabilitySerializer(availability).data if availability else None,
+            "payments": FreelancerPaymentMethodSerializer(payments, many=True).data,
+            "social": FreelancerSocialLinksSerializer(social).data if social else None,
+            "ratings": social.ratings if social else [],
+            "badges": social.badges if social else [],
+        })
+

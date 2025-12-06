@@ -99,6 +99,10 @@ class FreelancerBasicInfo(models.Model):
     location = models.CharField(max_length=255, blank=True, null=True)
     languages_known = models.JSONField(default=list, blank=True)  # e.g. ["English","Hindi"]
     profile_picture = models.ImageField(upload_to="freelancer_pictures/", blank=True, null=True)
+
+    # ✅ ADD HERE
+    is_published = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -108,6 +112,7 @@ class FreelancerBasicInfo(models.Model):
     class Meta:
         verbose_name = "Freelancer Basic Info"
         verbose_name_plural = "Freelancer Basic Infos"
+
 
 
 class FreelancerProfessionalDetails(models.Model):

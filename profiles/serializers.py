@@ -121,6 +121,7 @@ class FreelancerBasicInfoSerializer(serializers.ModelSerializer):
             "location",
             "languages_known",
             "profile_picture",
+            "is_published",   # ✅ ADD THIS HERE
             "created_at",
             "updated_at",
         ]

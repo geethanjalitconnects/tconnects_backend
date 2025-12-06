@@ -25,6 +25,8 @@ from .views import (
     FreelancerSocialLinksView,
     FreelancerProfilePreviewView,
 )
+from .views import FreelancerPublishProfileView, FreelancerPublicListView, FreelancerPublicDetailView
+
 
 urlpatterns = [
 

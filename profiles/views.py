@@ -385,11 +385,34 @@ class FreelancerPublicDetailView(APIView):
         except FreelancerBasicInfo.DoesNotExist:
             return Response({"error": "Freelancer not found"}, status=404)
 
-        professional = FreelancerProfessionalDetails.objects.filter(user=basic.user).first()
-        education = FreelancerEducation.objects.filter(user=basic.user)
-        availability = FreelancerAvailability.objects.filter(user=basic.user).first()
-        payments = FreelancerPaymentMethod.objects.filter(user=basic.user)
-        social = FreelancerSocialLinks.objects.filter(user=basic.user).first()
+        # PROFESSIONAL DETAILS
+        professional = FreelancerProfessionalDetails.objects.filter(
+            freelancer=basic
+        ).first()
+
+        # EDUCATION
+        education = FreelancerEducation.objects.filter(
+            freelancer=basic
+        )
+
+        # AVAILABILITY
+        availability = FreelancerAvailability.objects.filter(
+            freelancer=basic
+        ).first()
+
+        # PAYMENT METHODS
+        payments = FreelancerPaymentMethod.objects.filter(
+            freelancer=basic
+        )
+
+        # SOCIAL LINKS
+        social = FreelancerSocialLinks.objects.filter(
+            freelancer=basic
+        ).first()
+
+        # RATINGS stored inside SocialLinks JSON field
+        ratings = social.ratings if social and social.ratings else []
+        badges = social.badges if social and social.badges else []
 
         return Response({
             "basic": FreelancerBasicInfoSerializer(basic).data,
@@ -398,7 +421,6 @@ class FreelancerPublicDetailView(APIView):
             "availability": FreelancerAvailabilitySerializer(availability).data if availability else None,
             "payments": FreelancerPaymentMethodSerializer(payments, many=True).data,
             "social": FreelancerSocialLinksSerializer(social).data if social else None,
-            "ratings": social.ratings if social else [],
-            "badges": social.badges if social else [],
+            "ratings": ratings,
+            "badges": badges,
         })
-

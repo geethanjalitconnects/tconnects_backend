@@ -382,9 +382,6 @@ class FreelancerProfilePreviewView(APIView):
         education = FreelancerEducation.objects.filter(freelancer=basic)
         payments = FreelancerPaymentMethod.objects.filter(freelancer=basic)
 
-        ratings = links.ratings if hasattr(links, "ratings") else []
-        badges = links.badges if hasattr(links, "badges") else []
-
         return Response({
             "basic": FreelancerBasicInfoSerializer(basic).data,
             "professional": FreelancerProfessionalDetailsSerializer(professional).data,
@@ -392,8 +389,8 @@ class FreelancerProfilePreviewView(APIView):
             "availability": FreelancerAvailabilitySerializer(availability).data,
             "payments": FreelancerPaymentMethodSerializer(payments, many=True).data,
             "social": FreelancerSocialLinksSerializer(links).data,
-            "ratings": ratings,
-            "badges": badges,
+            "ratings": getattr(links, "ratings", []),
+            "badges": getattr(links, "badges", []),
         })
 
 # ----------------------------------------

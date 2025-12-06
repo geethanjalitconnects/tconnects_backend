@@ -168,6 +168,7 @@ class FreelancerEducationSerializer(serializers.ModelSerializer):
         read_only_fields = ["created_at"]
 
 
+
 # ----------------------------------------------------
 # AVAILABILITY
 # ----------------------------------------------------
@@ -176,12 +177,15 @@ class FreelancerAvailabilitySerializer(serializers.ModelSerializer):
         model = FreelancerAvailability
         fields = [
             "is_available",
+            "is_occupied",
+            "available_from",
+            "available_to",
             "time_zone",
             "available_days",
-            "hours_per_week",
             "updated_at",
         ]
         read_only_fields = ["updated_at"]
+
 
 
 # ----------------------------------------------------

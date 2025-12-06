@@ -155,25 +155,46 @@ class FreelancerAvailability(models.Model):
 
 
 class FreelancerPaymentMethod(models.Model):
-    freelancer = models.ForeignKey(FreelancerBasicInfo, on_delete=models.CASCADE, related_name="payment_methods")
-    payment_type = models.CharField(max_length=32, choices=PAYMENT_TYPE_CHOICES)
-    upi_id = models.CharField(max_length=128, blank=True, null=True)
-    bank_account_number = models.CharField(max_length=64, blank=True, null=True)
-    ifsc_code = models.CharField(max_length=32, blank=True, null=True)
-    account_holder_name = models.CharField(max_length=255, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    freelancer = models.ForeignKey(
+        FreelancerBasicInfo,
+        on_delete=models.CASCADE,
+        related_name="payment_methods"
+    )
+    payment_type = models.CharField(max_length=50)  # e.g. "UPI" or "Bank Transfer"
 
-    def __str__(self):
-        return f"{self.payment_type} for {self.freelancer.user.email}"
+    # UPI FIELD
+    upi_id = models.CharField(max_length=255, blank=True, null=True)
 
+    # BANK FIELDS
+    account_number = models.CharField(max_length=50, blank=True, null=True)  # rename to match serializer
+    ifsc_code = models.CharField(max_length=20, blank=True, null=True)
+    bank_name = models.CharField(max_length=255, blank=True, null=True)      # ⭐ NEW FIELD
 
-class FreelancerSocialLinks(models.Model):
-    freelancer = models.OneToOneField(FreelancerBasicInfo, on_delete=models.CASCADE, related_name="social_links")
-    linkedin_url = models.URLField(blank=True, null=True)
-    github_url = models.URLField(blank=True, null=True)
-    portfolio_url = models.URLField(blank=True, null=True)
-    rating = models.DecimalField(max_digits=3, decimal_places=2, blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"SocialLinks: {self.freelancer.user.email}"
+        return f"Payment Method for {self.freelancer.full_name}"
+
+
+
+class FreelancerSocialLinks(models.Model):
+    freelancer = models.OneToOneField(
+        FreelancerBasicInfo,
+        on_delete=models.CASCADE,
+        related_name="social_links"
+    )
+    linkedin_url = models.URLField(blank=True, null=True)
+    github_url = models.URLField(blank=True, null=True)
+    portfolio_url = models.URLField(blank=True, null=True)
+
+    # Existing rating field
+    rating = models.DecimalField(max_digits=3, decimal_places=2, blank=True, null=True)
+
+    # ⭐ IMPORTANT — Add these fields
+    ratings = models.JSONField(default=list, blank=True)  # Example: [{"stars":5,"comment":"Great!"}]
+    badges = models.JSONField(default=list, blank=True)   # Example: ["Top Rated", "Verified"]
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Social Links for {self.freelancer.full_name}"

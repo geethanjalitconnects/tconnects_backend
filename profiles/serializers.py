@@ -104,51 +104,54 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ["created_at", "updated_at"]
 
 
-# ============================================================
-# FREELANCER SERIALIZERS
-# ============================================================
 
-# -------------- BASIC INFO --------------
+
+
+# -----------------------------------------------------------
+# BASIC INFO
+# -----------------------------------------------------------
 class FreelancerBasicInfoSerializer(serializers.ModelSerializer):
-    user = UserMiniSerializer(read_only=True)
-
     class Meta:
         model = FreelancerBasicInfo
         fields = [
-            "user",
+            "id",
             "full_name",
             "phone_number",
             "location",
             "languages_known",
             "profile_picture",
-            "is_published",   # ✅ ADD THIS HERE
+            "is_published",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["created_at", "updated_at"]
 
 
-class FreelancerProfilePictureUploadSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = FreelancerBasicInfo
-        fields = ["profile_picture"]
-
-
-# -------------- PROFESSIONAL DETAILS --------------
+# -----------------------------------------------------------
+# PROFESSIONAL DETAILS (FIXED FIELD NAMES)
+# -----------------------------------------------------------
 class FreelancerProfessionalDetailsSerializer(serializers.ModelSerializer):
+    # Map backend → frontend names
+    expertise = serializers.CharField(source="area_of_expertise", allow_null=True, required=False)
+    experience = serializers.IntegerField(source="years_of_experience", allow_null=True, required=False)
+    categories = serializers.CharField(source="job_category", allow_null=True, required=False)
+    bio = serializers.CharField(source="professional_bio", allow_null=True, required=False)
+
     class Meta:
         model = FreelancerProfessionalDetails
         fields = [
-            "area_of_expertise",
-            "years_of_experience",
-            "job_category",
-            "professional_bio",
+            "expertise",
+            "experience",
+            "categories",
+            "bio",
             "updated_at",
         ]
         read_only_fields = ["updated_at"]
 
 
-# -------------- EDUCATION --------------
+# -----------------------------------------------------------
+# EDUCATION
+# -----------------------------------------------------------
 class FreelancerEducationSerializer(serializers.ModelSerializer):
     class Meta:
         model = FreelancerEducation
@@ -158,19 +161,20 @@ class FreelancerEducationSerializer(serializers.ModelSerializer):
             "institution",
             "start_year",
             "end_year",
-            "description",
-            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = ["updated_at"]
 
 
-# -------------- AVAILABILITY --------------
+# -----------------------------------------------------------
+# AVAILABILITY
+# -----------------------------------------------------------
 class FreelancerAvailabilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = FreelancerAvailability
         fields = [
+            "id",
             "is_available",
-            "is_occupied",
             "available_from",
             "available_to",
             "time_zone",
@@ -180,7 +184,9 @@ class FreelancerAvailabilitySerializer(serializers.ModelSerializer):
         read_only_fields = ["updated_at"]
 
 
-# -------------- PAYMENT METHODS --------------
+# -----------------------------------------------------------
+# PAYMENT METHODS
+# -----------------------------------------------------------
 class FreelancerPaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = FreelancerPaymentMethod
@@ -188,15 +194,17 @@ class FreelancerPaymentMethodSerializer(serializers.ModelSerializer):
             "id",
             "payment_type",
             "upi_id",
-            "bank_account_number",
+            "account_number",
             "ifsc_code",
-            "account_holder_name",
-            "created_at",
+            "bank_name",
+            "updated_at",
         ]
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = ["updated_at"]
 
 
-# -------------- SOCIAL LINKS --------------
+# -----------------------------------------------------------
+# SOCIAL LINKS (FIXED: ratings + badges INCLUDED)
+# -----------------------------------------------------------
 class FreelancerSocialLinksSerializer(serializers.ModelSerializer):
     class Meta:
         model = FreelancerSocialLinks
@@ -205,24 +213,8 @@ class FreelancerSocialLinksSerializer(serializers.ModelSerializer):
             "github_url",
             "portfolio_url",
             "rating",
+            "ratings",
+            "badges",
             "updated_at",
         ]
         read_only_fields = ["updated_at"]
-
-
-# ============================================================
-# FREELANCER MERGED PREVIEW SERIALIZER (FOR PREVIEW PAGE)
-# ============================================================
-
-class FreelancerProfilePreviewSerializer(serializers.Serializer):
-    """
-    This serializer is NOT tied to a model.
-    It merges all freelancer info to match your Preview screen.
-    """
-    basic_info = FreelancerBasicInfoSerializer()
-    professional_details = FreelancerProfessionalDetailsSerializer()
-    education = FreelancerEducationSerializer(many=True)
-    availability = FreelancerAvailabilitySerializer()
-    payment_methods = FreelancerPaymentMethodSerializer(many=True)
-    social_links = FreelancerSocialLinksSerializer()
-

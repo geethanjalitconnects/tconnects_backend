@@ -177,59 +177,80 @@ class PublicCompanyProfileView(APIView):
 # FREELANCER BASIC INFO
 # ============================================================
 
-class FreelancerBasicInfoView(RetrieveUpdateAPIView):
-    """
-    GET /api/profiles/freelancer/basic/
-    PATCH /api/profiles/freelancer/basic/
-    """
-    permission_classes = [IsFreelancer]
-    serializer_class = FreelancerBasicInfoSerializer
-
-    def get_object(self):
-        profile, _ = FreelancerBasicInfo.objects.get_or_create(user=self.request.user)
-        return profile
+# ----------------------------------------------------
+# FREELANCER PROFILE VIEWS (FULLY FIXED + STABLE)
+# ----------------------------------------------------
 
 
-class FreelancerProfilePictureUploadView(APIView):
-    permission_classes = [IsFreelancer]
 
-    def post(self, request):
-        profile, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
-        serializer = FreelancerProfilePictureUploadSerializer(profile, data=request.data, partial=True)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"profile_picture": profile.profile_picture.url}, status=200)
-
-        return Response(serializer.errors, status=400)
-
-
-# ============================================================
-# FREELANCER PROFESSIONAL DETAILS
-# ============================================================
-
-class FreelancerProfessionalDetailsView(RetrieveUpdateAPIView):
-    permission_classes = [IsFreelancer]
-    serializer_class = FreelancerProfessionalDetailsSerializer
-
-    def get_object(self):
-        basic, _ = FreelancerBasicInfo.objects.get_or_create(user=self.request.user)
-        details, _ = FreelancerProfessionalDetails.objects.get_or_create(freelancer=basic)
-        return details
-
-
-# ============================================================
-# FREELANCER EDUCATION (CRUD)
-# ============================================================
-
-class FreelancerEducationListCreateView(APIView):
-    permission_classes = [IsFreelancer]
+# ----------------------------------------
+# BASIC INFO
+# ----------------------------------------
+class FreelancerBasicInfoView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
-        education = basic.education.all()
-        serializer = FreelancerEducationSerializer(education, many=True)
+        return Response(FreelancerBasicInfoSerializer(basic).data)
+
+    def patch(self, request):
+        basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
+        serializer = FreelancerBasicInfoSerializer(basic, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(serializer.data)
+
+
+# ----------------------------------------
+# PROFILE PICTURE UPLOAD
+# ----------------------------------------
+class FreelancerProfilePictureUploadView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
+        picture = request.FILES.get("profile_picture")
+
+        if not picture:
+            return Response({"error": "No file provided"}, status=400)
+
+        basic.profile_picture = picture
+        basic.save()
+        return Response({"message": "Profile picture updated successfully"})
+
+
+# ----------------------------------------
+# PROFESSIONAL DETAILS
+# ----------------------------------------
+class FreelancerProfessionalDetailsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
+        details, _ = FreelancerProfessionalDetails.objects.get_or_create(freelancer=basic)
+        return Response(FreelancerProfessionalDetailsSerializer(details).data)
+
+    def patch(self, request):
+        basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
+        details, _ = FreelancerProfessionalDetails.objects.get_or_create(freelancer=basic)
+
+        serializer = FreelancerProfessionalDetailsSerializer(details, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+
+# ----------------------------------------
+# EDUCATION LIST + CREATE
+# ----------------------------------------
+class FreelancerEducationListCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
+        education = FreelancerEducation.objects.filter(freelancer=basic)
+        return Response(FreelancerEducationSerializer(education, many=True).data)
 
     def post(self, request):
         basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
@@ -242,51 +263,65 @@ class FreelancerEducationListCreateView(APIView):
         return Response(serializer.errors, status=400)
 
 
+# ----------------------------------------
+# EDUCATION UPDATE + DELETE
+# ----------------------------------------
 class FreelancerEducationUpdateDeleteView(APIView):
-    permission_classes = [IsFreelancer]
+    permission_classes = [permissions.IsAuthenticated]
 
     def patch(self, request, pk):
-        edu = get_object_or_404(FreelancerEducation, id=pk, freelancer__user=request.user)
-        serializer = FreelancerEducationSerializer(edu, data=request.data, partial=True)
+        try:
+            record = FreelancerEducation.objects.get(pk=pk, freelancer__user=request.user)
+        except FreelancerEducation.DoesNotExist:
+            return Response({"error": "Not found"}, status=404)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-
-        return Response(serializer.errors, status=400)
+        serializer = FreelancerEducationSerializer(record, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
     def delete(self, request, pk):
-        edu = get_object_or_404(FreelancerEducation, id=pk, freelancer__user=request.user)
-        edu.delete()
-        return Response({"detail": "Deleted"}, status=204)
+        try:
+            record = FreelancerEducation.objects.get(pk=pk, freelancer__user=request.user)
+        except FreelancerEducation.DoesNotExist:
+            return Response({"error": "Not found"}, status=404)
+
+        record.delete()
+        return Response({"message": "Deleted successfully"}, status=200)
 
 
-# ============================================================
-# FREELANCER AVAILABILITY
-# ============================================================
-
-class FreelancerAvailabilityView(RetrieveUpdateAPIView):
-    permission_classes = [IsFreelancer]
-    serializer_class = FreelancerAvailabilitySerializer
-
-    def get_object(self):
-        basic, _ = FreelancerBasicInfo.objects.get_or_create(user=self.request.user)
-        availability, _ = FreelancerAvailability.objects.get_or_create(freelancer=basic)
-        return availability
-
-
-# ============================================================
-# FREELANCER PAYMENT METHODS (ADD / LIST / DELETE)
-# ============================================================
-
-class FreelancerPaymentMethodListCreateView(APIView):
-    permission_classes = [IsFreelancer]
+# ----------------------------------------
+# AVAILABILITY
+# ----------------------------------------
+class FreelancerAvailabilityView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
-        payments = basic.payment_methods.all()
-        serializer = FreelancerPaymentMethodSerializer(payments, many=True)
+        availability, _ = FreelancerAvailability.objects.get_or_create(freelancer=basic)
+        return Response(FreelancerAvailabilitySerializer(availability).data)
+
+    def patch(self, request):
+        basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
+        availability, _ = FreelancerAvailability.objects.get_or_create(freelancer=basic)
+
+        serializer = FreelancerAvailabilitySerializer(availability, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
         return Response(serializer.data)
+
+
+# ----------------------------------------
+# PAYMENT METHODS
+# ----------------------------------------
+class FreelancerPaymentMethodListCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
+        methods = FreelancerPaymentMethod.objects.filter(freelancer=basic)
+        return Response(FreelancerPaymentMethodSerializer(methods, many=True).data)
 
     def post(self, request):
         basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
@@ -299,82 +334,93 @@ class FreelancerPaymentMethodListCreateView(APIView):
         return Response(serializer.errors, status=400)
 
 
-class FreelancerPaymentMethodDeleteView(DestroyAPIView):
-    permission_classes = [IsFreelancer]
-    serializer_class = FreelancerPaymentMethodSerializer
+class FreelancerPaymentMethodDeleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        return FreelancerPaymentMethod.objects.filter(freelancer__user=self.request.user)
+    def delete(self, request, pk):
+        try:
+            method = FreelancerPaymentMethod.objects.get(pk=pk, freelancer__user=request.user)
+        except FreelancerPaymentMethod.DoesNotExist:
+            return Response({"error": "Not found"}, status=404)
+
+        method.delete()
+        return Response({"message": "Deleted successfully"}, status=200)
 
 
-# ============================================================
-# FREELANCER SOCIAL LINKS
-# ============================================================
+# ----------------------------------------
+# SOCIAL LINKS
+# ----------------------------------------
+class FreelancerSocialLinksView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
-class FreelancerSocialLinksView(RetrieveUpdateAPIView):
-    permission_classes = [IsFreelancer]
-    serializer_class = FreelancerSocialLinksSerializer
-
-    def get_object(self):
-        basic, _ = FreelancerBasicInfo.objects.get_or_create(user=self.request.user)
+    def get(self, request):
+        basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
         links, _ = FreelancerSocialLinks.objects.get_or_create(freelancer=basic)
-        return links
+        return Response(FreelancerSocialLinksSerializer(links).data)
+
+    def patch(self, request):
+        basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
+        links, _ = FreelancerSocialLinks.objects.get_or_create(freelancer=basic)
+
+        serializer = FreelancerSocialLinksSerializer(links, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
 
 
-# ============================================================
-# FREELANCER PROFILE PREVIEW (MERGED)
-# ============================================================
-
+# ----------------------------------------
+# PROFILE PREVIEW (CENTRAL API)
+# ----------------------------------------
 class FreelancerProfilePreviewView(APIView):
-    permission_classes = [IsFreelancer]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
         professional, _ = FreelancerProfessionalDetails.objects.get_or_create(freelancer=basic)
         availability, _ = FreelancerAvailability.objects.get_or_create(freelancer=basic)
         links, _ = FreelancerSocialLinks.objects.get_or_create(freelancer=basic)
-        education = basic.education.all()
-        payments = basic.payment_methods.all()
 
-        serializer = FreelancerProfilePreviewSerializer({
-            "basic_info": basic,
-            "professional_details": professional,
-            "education": education,
-            "availability": availability,
-            "payment_methods": payments,
-            "social_links": links,
+        education = FreelancerEducation.objects.filter(freelancer=basic)
+        payments = FreelancerPaymentMethod.objects.filter(freelancer=basic)
+
+        ratings = links.ratings if hasattr(links, "ratings") else []
+        badges = links.badges if hasattr(links, "badges") else []
+
+        return Response({
+            "basic": FreelancerBasicInfoSerializer(basic).data,
+            "professional": FreelancerProfessionalDetailsSerializer(professional).data,
+            "education": FreelancerEducationSerializer(education, many=True).data,
+            "availability": FreelancerAvailabilitySerializer(availability).data,
+            "payments": FreelancerPaymentMethodSerializer(payments, many=True).data,
+            "social": FreelancerSocialLinksSerializer(links).data,
+            "ratings": ratings,
+            "badges": badges,
         })
 
-        return Response(serializer.data, status=200)
-    
+# ----------------------------------------
+# PUBLISH PROFILE
+# ----------------------------------------
 class FreelancerPublishProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        try:
-            basic = FreelancerBasicInfo.objects.get(user=request.user)
-        except FreelancerBasicInfo.DoesNotExist:
-            return Response({"error": "Basic info not completed"}, status=400)
-
+        basic, _ = FreelancerBasicInfo.objects.get_or_create(user=request.user)
         basic.is_published = True
         basic.save()
+        return Response({"message": "Freelancer profile published successfully"})
 
-        return Response({"message": "Profile published successfully"}, status=200)
 
-# ============================================================
-# PUBLIC FREELANCER LIST (VISIBLE TO RECRUITERS)
-# ============================================================
+# ----------------------------------------
+# PUBLIC LIST + PUBLIC DETAIL
+# ----------------------------------------
+class FreelancerPublicListView(APIView):
+    permission_classes = [permissions.AllowAny]
 
-class FreelancerPublicListView(ListAPIView):
-    """
-    GET /api/profiles/freelancers/
-    Returns ONLY published freelancers
-    """
-    serializer_class = FreelancerBasicInfoSerializer
-    permission_classes = [permissions.AllowAny]  # Recruiters + public can view
+    def get(self, request):
+        freelancers = FreelancerBasicInfo.objects.filter(is_published=True)
+        return Response(FreelancerBasicInfoSerializer(freelancers, many=True).data)
 
-    def get_queryset(self):
-        return FreelancerBasicInfo.objects.filter(is_published=True)
 
 class FreelancerPublicDetailView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -385,40 +431,20 @@ class FreelancerPublicDetailView(APIView):
         except FreelancerBasicInfo.DoesNotExist:
             return Response({"error": "Freelancer not found"}, status=404)
 
-        # PROFESSIONAL DETAILS
-        professional = FreelancerProfessionalDetails.objects.filter(
-            freelancer=basic
-        ).first()
+        professional = FreelancerProfessionalDetails.objects.filter(freelancer=basic).first()
+        availability = FreelancerAvailability.objects.filter(freelancer=basic).first()
+        education = FreelancerEducation.objects.filter(freelancer=basic)
+        payments = FreelancerPaymentMethod.objects.filter(freelancer=basic)
+        social = FreelancerSocialLinks.objects.filter(freelancer=basic).first()
 
-        # EDUCATION
-        education = FreelancerEducation.objects.filter(
-            freelancer=basic
-        )
-
-        # AVAILABILITY
-        availability = FreelancerAvailability.objects.filter(
-            freelancer=basic
-        ).first()
-
-        # PAYMENT METHODS
-        payments = FreelancerPaymentMethod.objects.filter(
-            freelancer=basic
-        )
-
-        # SOCIAL LINKS
-        social = FreelancerSocialLinks.objects.filter(
-            freelancer=basic
-        ).first()
-
-        # RATINGS stored inside SocialLinks JSON field
-        ratings = social.ratings if social and social.ratings else []
-        badges = social.badges if social and social.badges else []
+        ratings = social.ratings if social and hasattr(social, "ratings") else []
+        badges = social.badges if social and hasattr(social, "badges") else []
 
         return Response({
             "basic": FreelancerBasicInfoSerializer(basic).data,
             "professional": FreelancerProfessionalDetailsSerializer(professional).data if professional else None,
-            "education": FreelancerEducationSerializer(education, many=True).data,
             "availability": FreelancerAvailabilitySerializer(availability).data if availability else None,
+            "education": FreelancerEducationSerializer(education, many=True).data,
             "payments": FreelancerPaymentMethodSerializer(payments, many=True).data,
             "social": FreelancerSocialLinksSerializer(social).data if social else None,
             "ratings": ratings,

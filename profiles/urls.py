@@ -75,7 +75,8 @@ urlpatterns = [
     path("freelancer/social-links/", FreelancerSocialLinksView.as_view(), name="freelancer-social"),
 
     # Profile preview (merged)
-    path("freelancer/preview/", FreelancerProfilePreviewView.as_view(), name="freelancer-preview"),
+    path("freelancer/profile-preview/", FreelancerProfilePreviewView.as_view()),
+
     
     path("freelancer/publish/", FreelancerPublishProfileView.as_view()),
     path("freelancers/", FreelancerPublicListView.as_view(), name="freelancer-public-list"),

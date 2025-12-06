@@ -111,10 +111,12 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
 # BASIC INFO
 # -----------------------------------------------------------
 class FreelancerBasicInfoSerializer(serializers.ModelSerializer):
+    user = UserMiniSerializer(read_only=True)
+
     class Meta:
         model = FreelancerBasicInfo
         fields = [
-            "id",
+            "user",
             "full_name",
             "phone_number",
             "location",
@@ -127,15 +129,14 @@ class FreelancerBasicInfoSerializer(serializers.ModelSerializer):
         read_only_fields = ["created_at", "updated_at"]
 
 
-# -----------------------------------------------------------
-# PROFESSIONAL DETAILS (FIXED FIELD NAMES)
-# -----------------------------------------------------------
+# ----------------------------------------------------
+# PROFESSIONAL DETAILS
+# ----------------------------------------------------
 class FreelancerProfessionalDetailsSerializer(serializers.ModelSerializer):
-    # Map backend → frontend names
-    expertise = serializers.CharField(source="area_of_expertise", allow_null=True, required=False)
-    experience = serializers.IntegerField(source="years_of_experience", allow_null=True, required=False)
-    categories = serializers.CharField(source="job_category", allow_null=True, required=False)
-    bio = serializers.CharField(source="professional_bio", allow_null=True, required=False)
+    expertise = serializers.CharField(source="area_of_expertise", allow_blank=True)
+    experience = serializers.IntegerField(source="years_of_experience", required=False)
+    categories = serializers.CharField(source="job_category", allow_blank=True)
+    bio = serializers.CharField(source="professional_bio", allow_blank=True)
 
     class Meta:
         model = FreelancerProfessionalDetails
@@ -149,9 +150,9 @@ class FreelancerProfessionalDetailsSerializer(serializers.ModelSerializer):
         read_only_fields = ["updated_at"]
 
 
-# -----------------------------------------------------------
-# EDUCATION
-# -----------------------------------------------------------
+# ----------------------------------------------------
+# EDUCATION (FIXED — removed updated_at)
+# ----------------------------------------------------
 class FreelancerEducationSerializer(serializers.ModelSerializer):
     class Meta:
         model = FreelancerEducation
@@ -161,32 +162,31 @@ class FreelancerEducationSerializer(serializers.ModelSerializer):
             "institution",
             "start_year",
             "end_year",
-            "updated_at",
+            "description",
+            "created_at",
         ]
-        read_only_fields = ["updated_at"]
+        read_only_fields = ["created_at"]
 
 
-# -----------------------------------------------------------
+# ----------------------------------------------------
 # AVAILABILITY
-# -----------------------------------------------------------
+# ----------------------------------------------------
 class FreelancerAvailabilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = FreelancerAvailability
         fields = [
-            "id",
             "is_available",
-            "available_from",
-            "available_to",
             "time_zone",
             "available_days",
+            "hours_per_week",
             "updated_at",
         ]
         read_only_fields = ["updated_at"]
 
 
-# -----------------------------------------------------------
+# ----------------------------------------------------
 # PAYMENT METHODS
-# -----------------------------------------------------------
+# ----------------------------------------------------
 class FreelancerPaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = FreelancerPaymentMethod
@@ -202,9 +202,9 @@ class FreelancerPaymentMethodSerializer(serializers.ModelSerializer):
         read_only_fields = ["updated_at"]
 
 
-# -----------------------------------------------------------
-# SOCIAL LINKS (FIXED: ratings + badges INCLUDED)
-# -----------------------------------------------------------
+# ----------------------------------------------------
+# SOCIAL LINKS
+# ----------------------------------------------------
 class FreelancerSocialLinksSerializer(serializers.ModelSerializer):
     class Meta:
         model = FreelancerSocialLinks

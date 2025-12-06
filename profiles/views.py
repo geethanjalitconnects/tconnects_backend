@@ -34,13 +34,11 @@ from .serializers import (
     CompanyProfileSerializer,
 
     FreelancerBasicInfoSerializer,
-    FreelancerProfilePictureUploadSerializer,
     FreelancerProfessionalDetailsSerializer,
     FreelancerEducationSerializer,
     FreelancerAvailabilitySerializer,
     FreelancerPaymentMethodSerializer,
     FreelancerSocialLinksSerializer,
-    FreelancerProfilePreviewSerializer,
 )
 
 User = get_user_model()

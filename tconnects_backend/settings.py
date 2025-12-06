@@ -53,6 +53,8 @@ INSTALLED_APPS = [
     'internships',
     'applications',
     'courses',
+    'mockinterview',
+
 ]
 
 SITE_ID = 1

@@ -24,6 +24,8 @@ from .views import (
     FreelancerPaymentMethodDeleteView,
     FreelancerSocialLinksView,
     FreelancerProfilePreviewView,
+    DeleteFreelancerProfileView,
+
 )
 from .views import FreelancerPublishProfileView, FreelancerPublicListView, FreelancerPublicDetailView
 

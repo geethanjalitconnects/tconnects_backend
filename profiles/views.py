@@ -439,7 +439,17 @@ class FreelancerPublicListView(APIView):
 
     def get(self, request):
         freelancers = FreelancerBasicInfo.objects.filter(is_published=True)
-        return Response(FreelancerBasicInfoSerializer(freelancers, many=True).data)
+
+        result = []
+        for basic in freelancers:
+            professional = FreelancerProfessionalDetails.objects.filter(freelancer=basic).first()
+            item = {
+                "basic": FreelancerBasicInfoSerializer(basic).data,
+                "professional": FreelancerProfessionalDetailsSerializer(professional).data if professional else None,
+            }
+            result.append(item)
+
+        return Response(result)
 
 
 class FreelancerPublicDetailView(APIView):

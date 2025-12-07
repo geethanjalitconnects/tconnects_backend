@@ -133,10 +133,10 @@ class FreelancerBasicInfoSerializer(serializers.ModelSerializer):
 # PROFESSIONAL DETAILS
 # ----------------------------------------------------
 class FreelancerProfessionalDetailsSerializer(serializers.ModelSerializer):
-    expertise = serializers.CharField(source="area_of_expertise", allow_blank=True)
-    experience = serializers.IntegerField(source="years_of_experience", required=False)
-    categories = serializers.CharField(source="job_category", allow_blank=True)
-    bio = serializers.CharField(source="professional_bio", allow_blank=True)
+    expertise = serializers.CharField(source="area_of_expertise", allow_blank=True, required=False)
+    experience = serializers.IntegerField(source="years_of_experience", required=False, allow_null=True)
+    categories = serializers.CharField(source="job_category", allow_blank=True, required=False)
+    bio = serializers.CharField(source="professional_bio", allow_blank=True, required=False)
 
     class Meta:
         model = FreelancerProfessionalDetails
@@ -148,6 +148,20 @@ class FreelancerProfessionalDetailsSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["updated_at"]
+    
+    def to_internal_value(self, data):
+        """Handle both aliased and raw field names for PATCH/POST"""
+        # Map raw field names to aliased field names if present
+        if "area_of_expertise" in data:
+            data["expertise"] = data.pop("area_of_expertise")
+        if "years_of_experience" in data:
+            data["experience"] = data.pop("years_of_experience")
+        if "job_category" in data:
+            data["categories"] = data.pop("job_category")
+        if "professional_bio" in data:
+            data["bio"] = data.pop("professional_bio")
+        
+        return super().to_internal_value(data)
 
 
 # ----------------------------------------------------

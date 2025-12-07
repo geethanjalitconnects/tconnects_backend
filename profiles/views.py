@@ -405,6 +405,31 @@ class FreelancerPublishProfileView(APIView):
         basic.save()
         return Response({"message": "Freelancer profile published successfully"})
 
+# ----------------------------------------
+# DELETE FREELANCER PROFILE
+# ----------------------------------------
+class DeleteFreelancerProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request):
+        try:
+            # Get the freelancer basic info for the logged-in user
+            basic = FreelancerBasicInfo.objects.get(user=request.user)
+
+            # Delete all related freelancer data
+            FreelancerProfessionalDetails.objects.filter(freelancer=basic).delete()
+            FreelancerEducation.objects.filter(freelancer=basic).delete()
+            FreelancerAvailability.objects.filter(freelancer=basic).delete()
+            FreelancerPaymentMethod.objects.filter(freelancer=basic).delete()
+            FreelancerSocialLinks.objects.filter(freelancer=basic).delete()
+
+            # Finally delete the main profile
+            basic.delete()
+
+            return Response({"message": "Freelancer profile deleted successfully"}, status=200)
+
+        except FreelancerBasicInfo.DoesNotExist:
+            return Response({"error": "Freelancer profile not found"}, status=404)
 
 # ----------------------------------------
 # PUBLIC LIST + PUBLIC DETAIL

@@ -12,12 +12,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-_&t*lyfepo%s6dvc4_(w(jg4@!pb!u@0m@-k38h-*)g52qg=ga')
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = [
-    "tconnects-backend.onrender.com",
-    "tconnects-frontend.onrender.com",
-    "localhost",
-    "127.0.0.1",
-]
+if DEBUG:
+    ALLOWED_HOSTS = [
+        "localhost",
+        "127.0.0.1",
+        "tconnects-backend-staging.onrender.com",
+    ]
+else:
+    ALLOWED_HOSTS = [
+        "tconnects-backend.onrender.com",
+        "tconnects.in",
+        "www.tconnects.in",
+    ]
+
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
@@ -78,32 +85,41 @@ MIDDLEWARE = [
 # -------------------------------
 CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    "content-type",
-    "authorization",
-    "x-requested-with",
-    "x-csrftoken",
-]
+if DEBUG:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://tconnects-frontend-staging.onrender.com",
+    ]
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://tconnects-frontend-staging.onrender.com",
+    ]
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "https://tconnects.in",
+        "https://www.tconnects.in",
+    ]
+    CSRF_TRUSTED_ORIGINS = [
+        "https://tconnects.in",
+        "https://www.tconnects.in",
+    ]
 
-CORS_ALLOWED_ORIGINS = [
-    "https://tconnects.in",
-    "https://www.tconnects.in",
-]
 
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://tconnects.in",
-    "https://www.tconnects.in",
-]
+if DEBUG:
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
+else:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = "None"
+    CSRF_COOKIE_SAMESITE = "None"
+    SECURE_SSL_REDIRECT = True
 
-
-# ⭐ ALLOW COOKIES ACROSS ONRENDER *
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = "None"
-CSRF_COOKIE_SAMESITE = "None"
-SECURE_SSL_REDIRECT = True
-CORS_ALLOW_ALL_ORIGINS = False
 
 
 
@@ -148,11 +164,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Email
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = config('EMAIL_HOST', default='smtp.office365.com')
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default='True') == 'True'
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 
 # REST Framework

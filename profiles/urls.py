@@ -78,6 +78,8 @@ urlpatterns = [
     path("freelancer/preview/", FreelancerProfilePreviewView.as_view(), name="freelancer-preview"),
     
     path("freelancer/publish/", FreelancerPublishProfileView.as_view()),
+    path("freelancer/delete/", DeleteFreelancerProfileView.as_view(), name="freelancer-delete"),
+
     path("freelancers/", FreelancerPublicListView.as_view(), name="freelancer-public-list"),
     path("freelancers/<int:pk>/", FreelancerPublicDetailView.as_view()),
 

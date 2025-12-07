@@ -86,21 +86,23 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "https://tconnects-frontend.onrender.com",
-    "http://tconnects-frontend.onrender.com", 
+    "https://tconnects.in",
+    "https://www.tconnects.in",
 ]
 
+
 CSRF_TRUSTED_ORIGINS = [
-    "https://tconnects-frontend.onrender.com",
-    "http://tconnects-frontend.onrender.com", 
+    "https://tconnects.in",
+    "https://www.tconnects.in",
 ]
+
 
 # ⭐ ALLOW COOKIES ACROSS ONRENDER *
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = "None"
 CSRF_COOKIE_SAMESITE = "None"
-
+SECURE_SSL_REDIRECT = True
 CORS_ALLOW_ALL_ORIGINS = False
 
 

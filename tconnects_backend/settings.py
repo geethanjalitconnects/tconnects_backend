@@ -44,6 +44,17 @@ INSTALLED_APPS = [
     'mockinterview',
 ]
 
+# Allow sslserver during local development for HTTPS dev server
+if DEBUG:
+    try:
+        # add sslserver if available in the virtualenv
+        import importlib
+        if importlib.util.find_spec('sslserver') is not None and 'sslserver' not in INSTALLED_APPS:
+            INSTALLED_APPS.append('sslserver')
+    except Exception:
+        # silent fallback if sslserver is not installed
+        pass
+
 SITE_ID = 1
 # URL configuration
 ROOT_URLCONF = 'tconnects_backend.urls'
@@ -83,13 +94,15 @@ MIDDLEWARE = [
 ]
 
 # ===========================
-# CORS / COOKIES
+# CORS / COOKIES (FIXED VERSION)
 # ===========================
 
 CORS_ALLOW_CREDENTIALS = True
 
-# Load origins from env; when DEBUG we also allow common localhost dev origins
-_env_origins = config("CORS_ALLOWED_ORIGINS", default="", cast=Csv())
+# Parse CORS origins properly
+_env_origins_str = config("CORS_ALLOWED_ORIGINS", default="")
+_env_origins = [origin.strip() for origin in _env_origins_str.split(',') if origin.strip()]
+
 if DEBUG:
     # include typical local dev ports used by Vite/CRA
     _dev_origins = [
@@ -99,23 +112,33 @@ if DEBUG:
         "http://127.0.0.1:3000",
     ]
     # merge and dedupe
-    CORS_ALLOWED_ORIGINS = list(dict.fromkeys((_env_origins or []) + _dev_origins))
+    CORS_ALLOWED_ORIGINS = list(dict.fromkeys(_env_origins + _dev_origins))
 else:
     CORS_ALLOWED_ORIGINS = _env_origins
 
-# CSRF trusted origins (also support env override)
-CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default="", cast=Csv())
+# CSRF trusted origins (parse properly)
+_csrf_origins_str = config("CSRF_TRUSTED_ORIGINS", default="")
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _csrf_origins_str.split(',') if origin.strip()]
 
 # Optional: allow all origins for quick debugging/testing (use only temporarily)
-# Set ALLOW_ALL_CORS=True in environment to enable. Default is False.
 ALLOW_ALL_CORS = config("ALLOW_ALL_CORS", default=False, cast=bool)
 if ALLOW_ALL_CORS:
-    # django-cors-headers supports CORS_ALLOW_ALL_ORIGINS boolean
     CORS_ALLOW_ALL_ORIGINS = True
-    # Keep CORS_ALLOWED_ORIGINS empty when allowing all
     CORS_ALLOWED_ORIGINS = []
+    print("⚠️ WARNING: ALLOW_ALL_CORS is enabled! All origins are allowed.")
 else:
     CORS_ALLOW_ALL_ORIGINS = False
+
+# Debug output to verify CORS configuration
+print("="*60)
+print("🔍 CORS CONFIGURATION DEBUG:")
+print(f"   DEBUG mode: {DEBUG}")
+print(f"   ALLOW_ALL_CORS: {ALLOW_ALL_CORS}")
+print(f"   CORS_ALLOW_ALL_ORIGINS: {CORS_ALLOW_ALL_ORIGINS}")
+print(f"   CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
+print(f"   CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}")
+print(f"   CORS_ALLOW_CREDENTIALS: {CORS_ALLOW_CREDENTIALS}")
+print("="*60)
 
 CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken", "Set-Cookie"]
 CORS_ALLOW_HEADERS = [
@@ -128,12 +151,14 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
-    "access-control-allow-origin",
 ]
 
 CSRF_COOKIE_HTTPONLY = False
 CSRF_HEADER_NAME = "X-CSRFToken"
 SESSION_COOKIE_HTTPONLY = False
+
+# Cookie domain (leave empty for staging)
+COOKIE_DOMAIN = config('COOKIE_DOMAIN', default=None)
 
 # STAGING (DEBUG=True)
 if DEBUG:

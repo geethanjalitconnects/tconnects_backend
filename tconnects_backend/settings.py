@@ -92,7 +92,10 @@ CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv())
 CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", cast=Csv())
 
 CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken", "Set-Cookie"]
-CORS_ALLOW_HEADERS = list(default_headers) + ["access-control-allow-origin"]
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "X-CSRFToken",
+    "access-control-allow-origin",
+]
 
 CSRF_COOKIE_HTTPONLY = False
 CSRF_HEADER_NAME = "X-CSRFToken"

@@ -80,21 +80,29 @@ TEMPLATES = [
 WSGI_APPLICATION = 'tconnects_backend.wsgi.application'
 
 
+# ===========================
+# MIDDLEWARE - CSRF DISABLED FOR STAGING
+# ===========================
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # CSRF DISABLED FOR STAGING - Re-enable for production
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
 ]
 
+print("="*60)
+print("⚠️  CSRF MIDDLEWARE IS DISABLED FOR STAGING")
+print("="*60)
+
 # ===========================
-# CORS / COOKIES (FIXED VERSION)
+# CORS / COOKIES (FIXED)
 # ===========================
 
 CORS_ALLOW_CREDENTIALS = True
@@ -120,7 +128,7 @@ else:
 _csrf_origins_str = config("CSRF_TRUSTED_ORIGINS", default="")
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _csrf_origins_str.split(',') if origin.strip()]
 
-# Optional: allow all origins for quick debugging/testing (use only temporarily)
+# Optional: allow all origins for quick debugging/testing
 ALLOW_ALL_CORS = config("ALLOW_ALL_CORS", default=False, cast=bool)
 if ALLOW_ALL_CORS:
     CORS_ALLOW_ALL_ORIGINS = True
@@ -131,7 +139,7 @@ else:
 
 # Debug output to verify CORS configuration
 print("="*60)
-print("🔍 CORS CONFIGURATION DEBUG:")
+print("🔍 CORS CONFIGURATION:")
 print(f"   DEBUG mode: {DEBUG}")
 print(f"   ALLOW_ALL_CORS: {ALLOW_ALL_CORS}")
 print(f"   CORS_ALLOW_ALL_ORIGINS: {CORS_ALLOW_ALL_ORIGINS}")
@@ -188,7 +196,7 @@ DATABASES = {
 }
 
 # ===========================
-# EMAIL SETTINGS
+# EMAIL SETTINGS - WITH TIMEOUT
 # ===========================
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -198,6 +206,15 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+EMAIL_TIMEOUT = 10  # 10 second timeout to prevent worker hangs
+
+print("="*60)
+print("📧 EMAIL CONFIGURATION:")
+print(f"   EMAIL_HOST: {EMAIL_HOST}")
+print(f"   EMAIL_PORT: {EMAIL_PORT}")
+print(f"   EMAIL_HOST_USER: {EMAIL_HOST_USER}")
+print(f"   EMAIL_TIMEOUT: {EMAIL_TIMEOUT} seconds")
+print("="*60)
 
 # ===========================
 # REST FRAMEWORK

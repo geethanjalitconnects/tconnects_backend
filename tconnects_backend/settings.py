@@ -10,20 +10,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Security
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-_&t*lyfepo%s6dvc4_(w(jg4@!pb!u@0m@-k38h-*)g52qg=ga')
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config("DEBUG", default=True, cast=bool)
 
-if DEBUG:
-    ALLOWED_HOSTS = [
-        "localhost",
-        "127.0.0.1",
-        "tconnects-backend-staging.onrender.com",
-    ]
-else:
-    ALLOWED_HOSTS = [
-        "tconnects-backend.onrender.com",
-        "tconnects.in",
-        "www.tconnects.in",
-    ]
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
 
 
 # Custom User Model
@@ -83,28 +72,20 @@ MIDDLEWARE = [
 # -------------------------------
 # CORS + COOKIE CONFIG
 # -------------------------------
+CORS_ALLOWED_ORIGINS = config(
+    "CORS_ALLOWED_ORIGINS",
+    cast=Csv(),
+    default=""
+)
+
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    cast=Csv(),
+    default=""
+)
 CORS_ALLOW_CREDENTIALS = True
 
-if DEBUG:
-    CORS_ALLOWED_ORIGINS = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://tconnects-frontend-staging.onrender.com",
-    ]
-    CSRF_TRUSTED_ORIGINS = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://tconnects-frontend-staging.onrender.com",
-    ]
-else:
-    CORS_ALLOWED_ORIGINS = [
-        "https://tconnects.in",
-        "https://www.tconnects.in",
-    ]
-    CSRF_TRUSTED_ORIGINS = [
-        "https://tconnects.in",
-        "https://www.tconnects.in",
-    ]
+
 
 
 

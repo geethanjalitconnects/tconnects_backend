@@ -28,30 +28,30 @@ def get_tokens_for_user(user):
 
 
 def set_auth_cookies(response, tokens):
+    # Determine cookie domain from settings if provided. If COOKIE_DOMAIN is
+    # not set, omit the `domain` attribute and let the browser set a host-only
+    # cookie for the backend host. This avoids hardcoding a single production
+    # domain (which broke staging and local deployments).
+    cookie_domain = getattr(settings, "COOKIE_DOMAIN", None)
 
-    domain = "tconnects-backend.onrender.com"  # FIXED DOMAIN
-
-    response.set_cookie(
-        key="access",
-        value=str(tokens["access"]),
+    cookie_options = dict(
         httponly=True,
         secure=True,
         samesite="None",
         path="/",
-        domain=domain,
-        max_age=3600
     )
 
-    response.set_cookie(
-        key="refresh",
-        value=str(tokens["refresh"]),
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        domain=domain,
-        max_age=604800
-    )
+    # Access token (short lived)
+    if cookie_domain:
+        response.set_cookie("access", str(tokens["access"]), max_age=3600, domain=cookie_domain, **cookie_options)
+    else:
+        response.set_cookie("access", str(tokens["access"]), max_age=3600, **cookie_options)
+
+    # Refresh token (longer lived)
+    if cookie_domain:
+        response.set_cookie("refresh", str(tokens["refresh"]), max_age=604800, domain=cookie_domain, **cookie_options)
+    else:
+        response.set_cookie("refresh", str(tokens["refresh"]), max_age=604800, **cookie_options)
 
     return response
 

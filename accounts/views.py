@@ -39,19 +39,20 @@ def set_auth_cookies(response, tokens):
         secure=True,
         samesite="None",
         path="/",
+        domain=domain,
+        max_age=3600
     )
 
-    # Access token (short lived)
-    if cookie_domain:
-        response.set_cookie("access", str(tokens["access"]), max_age=3600, domain=cookie_domain, **cookie_options)
-    else:
-        response.set_cookie("access", str(tokens["access"]), max_age=3600, **cookie_options)
-
-    # Refresh token (longer lived)
-    if cookie_domain:
-        response.set_cookie("refresh", str(tokens["refresh"]), max_age=604800, domain=cookie_domain, **cookie_options)
-    else:
-        response.set_cookie("refresh", str(tokens["refresh"]), max_age=604800, **cookie_options)
+    response.set_cookie(
+        key="refresh",
+        value=str(tokens["refresh"]),
+        httponly=True,
+        secure=True,
+        samesite="None",
+        path="/",
+        domain=domain,
+        max_age=604800
+    )
 
     return response
 

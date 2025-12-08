@@ -44,17 +44,6 @@ INSTALLED_APPS = [
     'mockinterview',
 ]
 
-# Allow sslserver during local development for HTTPS dev server
-if DEBUG:
-    try:
-        # add sslserver if available in the virtualenv
-        import importlib
-        if importlib.util.find_spec('sslserver') is not None and 'sslserver' not in INSTALLED_APPS:
-            INSTALLED_APPS.append('sslserver')
-    except Exception:
-        # silent fallback if sslserver is not installed
-        pass
-
 SITE_ID = 1
 # URL configuration
 ROOT_URLCONF = 'tconnects_backend.urls'

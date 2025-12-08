@@ -44,6 +44,17 @@ INSTALLED_APPS = [
     'mockinterview',
 ]
 
+# Allow sslserver during local development for HTTPS dev server
+if DEBUG:
+    try:
+        # add sslserver if available in the virtualenv
+        import importlib
+        if importlib.util.find_spec('sslserver') is not None and 'sslserver' not in INSTALLED_APPS:
+            INSTALLED_APPS.append('sslserver')
+    except Exception:
+        # silent fallback if sslserver is not installed
+        pass
+
 SITE_ID = 1
 # URL configuration
 ROOT_URLCONF = 'tconnects_backend.urls'
@@ -88,12 +99,46 @@ MIDDLEWARE = [
 
 CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv())
-CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", cast=Csv())
+# Load origins from env; when DEBUG we also allow common localhost dev origins
+_env_origins = config("CORS_ALLOWED_ORIGINS", default="", cast=Csv())
+if DEBUG:
+    # include typical local dev ports used by Vite/CRA
+    _dev_origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+    # merge and dedupe
+    CORS_ALLOWED_ORIGINS = list(dict.fromkeys((_env_origins or []) + _dev_origins))
+else:
+    CORS_ALLOWED_ORIGINS = _env_origins
+
+# CSRF trusted origins (also support env override)
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default="", cast=Csv())
+
+# Optional: allow all origins for quick debugging/testing (use only temporarily)
+# Set ALLOW_ALL_CORS=True in environment to enable. Default is False.
+ALLOW_ALL_CORS = config("ALLOW_ALL_CORS", default=False, cast=bool)
+if ALLOW_ALL_CORS:
+    # django-cors-headers supports CORS_ALLOW_ALL_ORIGINS boolean
+    CORS_ALLOW_ALL_ORIGINS = True
+    # Keep CORS_ALLOWED_ORIGINS empty when allowing all
+    CORS_ALLOWED_ORIGINS = []
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken", "Set-Cookie"]
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    "X-CSRFToken",
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
     "access-control-allow-origin",
 ]
 

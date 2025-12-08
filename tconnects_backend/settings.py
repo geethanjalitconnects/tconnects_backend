@@ -95,6 +95,7 @@ CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken", "Set-Cookie"]
 CORS_ALLOW_HEADERS = list(default_headers) + ["access-control-allow-origin"]
 
 CSRF_COOKIE_HTTPONLY = False
+CSRF_HEADER_NAME = "X-CSRFToken"
 SESSION_COOKIE_HTTPONLY = False
 
 # STAGING (DEBUG=True)

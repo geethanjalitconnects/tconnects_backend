@@ -9,4 +9,12 @@ def generate_otp():
 def send_otp_email(email, code):
     subject = "Your verification code"
     message = f"Your OTP code is {code}. It will expire in 10 minutes."
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
+    try:
+        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
+    except Exception:
+        # Avoid raising raw exceptions up to the view; log and re-raise so
+        # the caller can handle the failure gracefully.
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.exception("Failed to send OTP email to %s", email)
+        raise

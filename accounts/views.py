@@ -134,8 +134,11 @@ class SendOTPView(APIView):
 
         code = generate_otp()
         OTP.objects.create(email=email, code=code)
-
-        send_otp_email(email, code)
+        try:
+            send_otp_email(email, code)
+        except Exception as exc:
+            # If email sending fails, return a clear error without exposing internals.
+            return Response({"detail": "Failed to send OTP. Please try again later."}, status=500)
 
         return Response({"detail": "OTP sent"})
 

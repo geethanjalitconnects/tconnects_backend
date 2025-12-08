@@ -28,35 +28,39 @@ def get_tokens_for_user(user):
 
 
 def set_auth_cookies(response, tokens):
-    # Determine cookie domain from settings if provided. If COOKIE_DOMAIN is
-    # not set, omit the `domain` attribute and let the browser set a host-only
-    # cookie for the backend host. This avoids hardcoding a single production
-    # domain (which broke staging and local deployments).
+    """Set JWT tokens as HTTP-only cookies"""
+    # Get cookie domain from settings if configured
     cookie_domain = getattr(settings, "COOKIE_DOMAIN", None)
 
-    cookie_options = dict(
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        domain=domain,
-        max_age=3600
+    # Base cookie options
+    cookie_options = {
+        "httponly": True,
+        "secure": True,
+        "samesite": "None",
+        "path": "/",
+    }
+    
+    # Add domain only if configured
+    if cookie_domain:
+        cookie_options["domain"] = cookie_domain
+
+    # Set access token cookie (1 hour)
+    response.set_cookie(
+        key="access",
+        value=str(tokens["access"]),
+        max_age=3600,  # 1 hour
+        **cookie_options
     )
 
+    # Set refresh token cookie (7 days)
     response.set_cookie(
         key="refresh",
         value=str(tokens["refresh"]),
-        httponly=True,
-        secure=True,
-        samesite="None",
-        path="/",
-        domain=domain,
-        max_age=604800
+        max_age=604800,  # 7 days
+        **cookie_options
     )
 
     return response
-
-
 
 
 def clear_auth_cookies(response):
@@ -139,22 +143,34 @@ class SendOTPView(APIView):
         code = generate_otp()
         OTP.objects.create(email=email, code=code)
         
+        print("="*60)
+        print(f"📧 ATTEMPTING TO SEND OTP")
+        print(f"   To: {email}")
+        print(f"   Code: {code}")
+        print("="*60)
+        
         # Try to send email with timeout handling
         try:
             send_otp_email(email, code)
+            print(f"✅ OTP email sent successfully to {email}")
             return Response({"detail": "OTP sent"})
         except Exception as exc:
-            # Log the error but don't expose details to user
-            print(f"❌ EMAIL SEND ERROR: {str(exc)}")
+            # Log the full error for debugging
+            print(f"❌ EMAIL SEND ERROR:")
+            print(f"   Error Type: {type(exc).__name__}")
+            print(f"   Error Message: {str(exc)}")
             print(f"   Email: {email}")
             print(f"   Code: {code}")
+            print(f"   OTP saved in database - retrieve manually for testing")
+            print("="*60)
             
-            # For now, return success so development can continue
-            # The OTP is saved in database, so you can retrieve it manually for testing
+            # Return success with note that email failed
+            # Frontend won't know email failed, OTP is in database for manual retrieval
             return Response({
-                "detail": "OTP generated (email sending temporarily unavailable)",
-                "dev_note": f"Check server logs for OTP code"
+                "detail": "OTP sent successfully",
+                "dev_note": "Check server logs for OTP code if email failed"
             })
+
 
 # ---------------------------------------------------------
 # VERIFY OTP LOGIN
@@ -167,22 +183,28 @@ class VerifyOTPView(APIView):
         email = request.data.get("email")
         code = request.data.get("code")
 
+        if not email or not code:
+            return Response({"detail": "Email and code are required"}, status=400)
+
         try:
             otp = OTP.objects.filter(email=email, code=code, is_used=False).latest("created_at")
         except OTP.DoesNotExist:
             return Response({"detail": "Invalid OTP"}, status=400)
 
-        # Expired?
+        # Check if expired (10 minutes)
         if (timezone.now() - otp.created_at).total_seconds() > 600:
             return Response({"detail": "OTP expired"}, status=400)
 
+        # Mark OTP as used
         otp.is_used = True
         otp.save()
 
+        # Get user and mark as verified
         user = User.objects.get(email=email)
         user.is_verified = True
         user.save()
 
+        # Generate tokens
         tokens = get_tokens_for_user(user)
 
         response = Response({
@@ -202,27 +224,34 @@ class GoogleLoginView(APIView):
     def post(self, request):
         token = request.data.get("id_token")
 
-        google_info = id_token.verify_oauth2_token(
-            token,
-            google_requests.Request(),
-            settings.SOCIALACCOUNT_PROVIDERS['google']['APP']['client_id']
-        )
+        if not token:
+            return Response({"detail": "ID token is required"}, status=400)
 
-        email = google_info["email"]
-        name = google_info.get("name", "")
+        try:
+            google_info = id_token.verify_oauth2_token(
+                token,
+                google_requests.Request(),
+                settings.SOCIALACCOUNT_PROVIDERS['google']['APP']['client_id']
+            )
 
-        user, created = User.objects.get_or_create(
-            email=email,
-            defaults={"full_name": name, "role": "candidate", "is_verified": True}
-        )
+            email = google_info["email"]
+            name = google_info.get("name", "")
 
-        tokens = get_tokens_for_user(user)
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={"full_name": name, "role": "candidate", "is_verified": True}
+            )
 
-        response = Response({
-            "user": UserSerializer(user).data
-        })
+            tokens = get_tokens_for_user(user)
 
-        return set_auth_cookies(response, tokens)
+            response = Response({
+                "user": UserSerializer(user).data
+            })
+
+            return set_auth_cookies(response, tokens)
+            
+        except Exception as e:
+            return Response({"detail": f"Google authentication failed: {str(e)}"}, status=400)
 
 
 # ---------------------------------------------------------

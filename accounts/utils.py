@@ -1,20 +1,41 @@
 import random
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import OTP
+
 
 def generate_otp():
-    return f"{random.randint(100000,999999)}"
+    """Generate a random 6-digit OTP"""
+    return str(random.randint(100000, 999999))
+
 
 def send_otp_email(email, code):
-    subject = "Your verification code"
-    message = f"Your OTP code is {code}. It will expire in 10 minutes."
+    """Send OTP via email"""
+    subject = "Your TConnect Login OTP"
+    message = f"""
+Hello,
+
+Your One-Time Password (OTP) for logging into TConnect is: {code}
+
+This OTP is valid for 10 minutes.
+
+If you didn't request this OTP, please ignore this email.
+
+Best regards,
+TConnect Team
+    """.strip()
+    
     try:
-        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
-    except Exception:
-        # Avoid raising raw exceptions up to the view; log and re-raise so
-        # the caller can handle the failure gracefully.
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.exception("Failed to send OTP email to %s", email)
-        raise
+        result = send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,  # Raise exceptions so we can catch them
+        )
+        
+        print(f"✅ send_mail returned: {result}")
+        return result
+        
+    except Exception as e:
+        print(f"❌ send_mail raised exception: {type(e).__name__}: {str(e)}")
+        raise  # Re-raise so the view can handle it

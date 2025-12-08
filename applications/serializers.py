@@ -209,96 +209,9 @@ class InternshipApplicationStatusUpdateSerializer(serializers.ModelSerializer):
         instance.status_updated_at = timezone.now()
         instance.save()
         return instance
-# applications/serializers.py
-# --------------------------
-# Replace the existing JobSummarySerializer with this robust version.
-
-class JobSummarySerializer(serializers.ModelSerializer):
-    company_name = serializers.SerializerMethodField()
-    posted_on = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Job
-        fields = ("id", "title", "company_name", "location", "posted_on")
-
-    def get_company_name(self, obj):
-        """
-        Robustly obtain a company name for a Job instance.
-
-        Tries multiple possibilities in order:
-        - obj.company.company_name
-        - obj.company_name (direct field)
-        - obj.recruiter.company_name
-        - obj.recruiter.profile.company_name
-        - obj.employer.company_name
-        - obj.posted_by.company_name
-        - obj.company_profile.company_name
-        - fallback: "Company"
-        """
-        try:
-            # 1) Job.company -> Company model with company_name
-            if hasattr(obj, "company") and getattr(obj, "company"):
-                company = getattr(obj, "company")
-                if hasattr(company, "company_name"):
-                    return company.company_name
-                # direct string
-                if isinstance(company, str):
-                    return company
-
-            # 2) job has direct company_name field
-            if hasattr(obj, "company_name") and getattr(obj, "company_name"):
-                return getattr(obj, "company_name")
-
-            # 3) recruiter relation (common pattern)
-            recruiter = getattr(obj, "recruiter", None)
-            if recruiter:
-                if hasattr(recruiter, "company_name") and recruiter.company_name:
-                    return recruiter.company_name
-                # try nested profile
-                profile = getattr(recruiter, "profile", None)
-                if profile and hasattr(profile, "company_name") and profile.company_name:
-                    return profile.company_name
-
-            # 4) other common relation names
-            for attr in ("employer", "posted_by", "company_profile"):
-                rel = getattr(obj, attr, None)
-                if rel:
-                    if hasattr(rel, "company_name") and rel.company_name:
-                        return rel.company_name
-                    if isinstance(rel, str):
-                        return rel
-
-        except Exception:
-            # swallow and fallback to default to avoid 500s
-            pass
-
-        return "Company"
-
-    def get_posted_on(self, obj):
-        """
-        Return a date (ISO / readable) for when the job was posted.
-        Prefer 'posted_on' if present, else fall back to 'created_at'.
-        """
-        try:
-            if hasattr(obj, "posted_on") and getattr(obj, "posted_on"):
-                val = getattr(obj, "posted_on")
-            else:
-                val = getattr(obj, "created_at", None)
-
-            if not val:
-                return None
-
-            # return ISO string or date depending on what frontend expects
-            # safe approach: return ISO datetime string
-            return val.isoformat()
-        except Exception:
-            return None
-
-
-    
-
+# SavedJob serializer returns full job details nested
 class SavedJobSerializer(serializers.ModelSerializer):
-    job = JobSummarySerializer(read_only=True)
+    job = serializers.SerializerMethodField()
     job_id = serializers.PrimaryKeyRelatedField(
         write_only=True, queryset=Job.objects.all(), source="job"
     )
@@ -307,40 +220,19 @@ class SavedJobSerializer(serializers.ModelSerializer):
         model = SavedJob
         fields = ("id", "job", "job_id", "saved_on")
         read_only_fields = ("id", "saved_on", "job")
-# ---------------------- Internship Summary ----------------------
 
-class InternshipSummarySerializer(serializers.ModelSerializer):
-    company_name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Internship
-        fields = ("id", "title", "company_name", "location", "posted_on")
-
-    def get_company_name(self, obj):
-        return getattr(obj, "company_name", "Company")
-
-
-# ---------------------- Internship Summary ----------------------
-
-class InternshipSummarySerializer(serializers.ModelSerializer):
-    company_name = serializers.SerializerMethodField()
-
-    # ⭐ Map posted_on → created_at
-    posted_on = serializers.DateTimeField(source="created_at", read_only=True)
-
-    class Meta:
-        model = Internship
-        fields = ("id", "title", "company_name", "location", "posted_on")
-
-    def get_company_name(self, obj):
-        return getattr(obj, "company_name", "Company")
-
-
-
-# ---------------------- Saved Internship ----------------------
-
+    def get_job(self, obj):
+        """Return full job details (id, title, company_name, location, created_at)"""
+        return {
+            "id": obj.job.id,
+            "title": obj.job.title,
+            "company_name": getattr(obj.job, "company_name", "Company"),
+            "location": obj.job.location,
+            "created_at": obj.job.created_at,
+        }
+# SavedInternship serializer returns full internship details nested
 class SavedInternshipSerializer(serializers.ModelSerializer):
-    internship = InternshipSummarySerializer(read_only=True)
+    internship = serializers.SerializerMethodField()
     internship_id = serializers.PrimaryKeyRelatedField(
         write_only=True,
         queryset=Internship.objects.all(),
@@ -351,3 +243,13 @@ class SavedInternshipSerializer(serializers.ModelSerializer):
         model = SavedInternship
         fields = ("id", "internship", "internship_id", "saved_on")
         read_only_fields = ("id", "saved_on", "internship")
+
+    def get_internship(self, obj):
+        """Return full internship details (id, title, company_name, location, created_at)"""
+        return {
+            "id": obj.internship.id,
+            "title": obj.internship.title,
+            "company_name": getattr(obj.internship, "company_name", "Company"),
+            "location": obj.internship.location,
+            "created_at": obj.internship.created_at,
+        }

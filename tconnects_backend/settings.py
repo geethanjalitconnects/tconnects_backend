@@ -45,6 +45,29 @@ INSTALLED_APPS = [
 ]
 
 SITE_ID = 1
+# URL configuration
+ROOT_URLCONF = 'tconnects_backend.urls'
+
+# Templates configuration (required for Django admin)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],  
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+# WSGI application
+WSGI_APPLICATION = 'tconnects_backend.wsgi.application'
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',

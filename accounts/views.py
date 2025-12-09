@@ -65,8 +65,8 @@ def set_auth_cookies(response, tokens):
 
 
 def clear_auth_cookies(response):
-    response.delete_cookie("access", path="/")
-    response.delete_cookie("refresh", path="/")
+    response.delete_cookie("access", path="/", domain="tconnects-backend-staging.onrender.com")
+    response.delete_cookie("refresh", path="/", domain="tconnects-backend-staging.onrender.com")
     return response
 
 

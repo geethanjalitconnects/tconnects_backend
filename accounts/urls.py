@@ -32,7 +32,7 @@ urlpatterns = [
     
     # Logout
     path('logout/', LogoutView.as_view(), name='logout'),
-    path('debug/', DebugView.as_view(), name='debug'),
+    
     
     # Token Refresh (not used in cookie auth but safe to keep)
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),

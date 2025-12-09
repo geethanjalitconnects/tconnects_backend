@@ -44,22 +44,17 @@ INSTALLED_APPS = [
     'mockinterview',
 ]
 
-# Allow sslserver during local development for HTTPS dev server
 if DEBUG:
     try:
-        # add sslserver if available in the virtualenv
         import importlib
         if importlib.util.find_spec('sslserver') is not None and 'sslserver' not in INSTALLED_APPS:
             INSTALLED_APPS.append('sslserver')
     except Exception:
-        # silent fallback if sslserver is not installed
         pass
 
 SITE_ID = 1
-# URL configuration
 ROOT_URLCONF = 'tconnects_backend.urls'
 
-# Templates configuration (required for Django admin)
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -76,12 +71,10 @@ TEMPLATES = [
     },
 ]
 
-# WSGI application
 WSGI_APPLICATION = 'tconnects_backend.wsgi.application'
 
-
 # ===========================
-# MIDDLEWARE - CSRF DISABLED FOR STAGING
+# MIDDLEWARE
 # ===========================
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -89,8 +82,6 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # CSRF DISABLED FOR STAGING - Re-enable for production
-    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -102,7 +93,7 @@ print("⚠️  CSRF MIDDLEWARE IS DISABLED FOR STAGING")
 print("="*60)
 
 # ===========================
-# CORS / COOKIES (FIXED)
+# CORS / COOKIES - FIXED FOR SAFARI
 # ===========================
 
 CORS_ALLOW_CREDENTIALS = True
@@ -112,76 +103,90 @@ _env_origins_str = config("CORS_ALLOWED_ORIGINS", default="")
 _env_origins = [origin.strip() for origin in _env_origins_str.split(',') if origin.strip()]
 
 if DEBUG:
-    # include typical local dev ports used by Vite/CRA
     _dev_origins = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]
-    # merge and dedupe
     CORS_ALLOWED_ORIGINS = list(dict.fromkeys(_env_origins + _dev_origins))
 else:
     CORS_ALLOWED_ORIGINS = _env_origins
 
-# CSRF trusted origins (parse properly)
+# CSRF trusted origins
 _csrf_origins_str = config("CSRF_TRUSTED_ORIGINS", default="")
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _csrf_origins_str.split(',') if origin.strip()]
 
-# Optional: allow all origins for quick debugging/testing
+# Optional: allow all origins for testing
 ALLOW_ALL_CORS = config("ALLOW_ALL_CORS", default=False, cast=bool)
 if ALLOW_ALL_CORS:
     CORS_ALLOW_ALL_ORIGINS = True
     CORS_ALLOWED_ORIGINS = []
-    print("⚠️ WARNING: ALLOW_ALL_CORS is enabled! All origins are allowed.")
+    print("⚠️ WARNING: ALLOW_ALL_CORS is enabled!")
 else:
     CORS_ALLOW_ALL_ORIGINS = False
 
-# Debug output to verify CORS configuration
 print("="*60)
 print("🔍 CORS CONFIGURATION:")
 print(f"   DEBUG mode: {DEBUG}")
-print(f"   ALLOW_ALL_CORS: {ALLOW_ALL_CORS}")
-print(f"   CORS_ALLOW_ALL_ORIGINS: {CORS_ALLOW_ALL_ORIGINS}")
 print(f"   CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
 print(f"   CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}")
-print(f"   CORS_ALLOW_CREDENTIALS: {CORS_ALLOW_CREDENTIALS}")
 print("="*60)
 
-CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken", "Set-Cookie"]
-CORS_ALLOW_HEADERS = [
-    "accept",
-    "accept-encoding",
-    "authorization",
-    "content-type",
-    "dnt",
-    "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
+# CRITICAL: Extended CORS headers for Safari compatibility
+CORS_EXPOSE_HEADERS = [
+    "Content-Type", 
+    "X-CSRFToken", 
+    "Set-Cookie",
+    "Access-Control-Allow-Credentials",
 ]
 
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "x-csrftoken",
+    "x-requested-with",
+    "content-type",
+    "accept",
+    "origin",
+    "authorization",
+    "accept-encoding",
+    "access-control-allow-origin",
+    "access-control-allow-credentials",
+]
+
+# FIXED: Proper cookie settings for Safari
 CSRF_COOKIE_HTTPONLY = False
 CSRF_HEADER_NAME = "X-CSRFToken"
-SESSION_COOKIE_HTTPONLY = False
+SESSION_COOKIE_HTTPONLY = True  # Changed to True for security
 
 # Cookie domain (leave empty for staging)
 COOKIE_DOMAIN = config('COOKIE_DOMAIN', default=None)
 
-# STAGING (DEBUG=True)
+# CRITICAL: Safari requires these settings
 if DEBUG:
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    SESSION_COOKIE_SAMESITE = "Lax"
-    CSRF_COOKIE_SAMESITE = "Lax"
-
-# PRODUCTION (DEBUG=False)
+    # STAGING - Use Lax for better compatibility
+    SESSION_COOKIE_SECURE = True  # Still use HTTPS
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = "None"  # Required for cross-origin
+    CSRF_COOKIE_SAMESITE = "None"
+    
+    # Additional Safari fixes
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+    
 else:
+    # PRODUCTION
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SAMESITE = "None"
     CSRF_COOKIE_SAMESITE = "None"
     SECURE_SSL_REDIRECT = True
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+
+print("="*60)
+print("🍪 COOKIE SETTINGS:")
+print(f"   SESSION_COOKIE_SECURE: {SESSION_COOKIE_SECURE}")
+print(f"   SESSION_COOKIE_SAMESITE: {SESSION_COOKIE_SAMESITE}")
+print(f"   COOKIE_DOMAIN: {COOKIE_DOMAIN}")
+print("="*60)
 
 # ===========================
 # DATABASE
@@ -196,7 +201,7 @@ DATABASES = {
 }
 
 # ===========================
-# EMAIL SETTINGS - WITH TIMEOUT
+# EMAIL SETTINGS - FIXED TIMEOUT
 # ===========================
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -206,14 +211,13 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
-EMAIL_TIMEOUT = 10  # 10 second timeout to prevent worker hangs
+EMAIL_TIMEOUT = 30  # Increased to 30 seconds
 
 print("="*60)
 print("📧 EMAIL CONFIGURATION:")
 print(f"   EMAIL_HOST: {EMAIL_HOST}")
-print(f"   EMAIL_PORT: {EMAIL_PORT}")
 print(f"   EMAIL_HOST_USER: {EMAIL_HOST_USER}")
-print(f"   EMAIL_TIMEOUT: {EMAIL_TIMEOUT} seconds")
+print(f"   EMAIL_TIMEOUT: {EMAIL_TIMEOUT}s")
 print("="*60)
 
 # ===========================

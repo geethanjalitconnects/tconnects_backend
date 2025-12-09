@@ -4,6 +4,7 @@ from rest_framework import status, permissions
 from django.contrib.auth import authenticate
 from django.utils import timezone
 from django.conf import settings
+from django.core.mail import send_mail
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from google.oauth2 import id_token
@@ -65,8 +66,8 @@ def set_auth_cookies(response, tokens):
 
 def clear_auth_cookies(response):
     """Remove cookies on logout"""
-    response.delete_cookie("access", path="/")
-    response.delete_cookie("refresh", path="/")
+    response.delete_cookie("access", path="/", samesite="None", secure=True)
+    response.delete_cookie("refresh", path="/", samesite="None", secure=True)
     return response
 
 
@@ -123,7 +124,7 @@ class PasswordLoginView(APIView):
 
 
 # ---------------------------------------------------------
-# SEND OTP
+# SEND OTP - FIXED VERSION
 # ---------------------------------------------------------
 
 class SendOTPView(APIView):
@@ -144,32 +145,45 @@ class SendOTPView(APIView):
         OTP.objects.create(email=email, code=code)
         
         print("="*60)
-        print(f"📧 ATTEMPTING TO SEND OTP")
+        print(f"📧 SENDING OTP")
         print(f"   To: {email}")
         print(f"   Code: {code}")
         print("="*60)
         
-        # Try to send email with timeout handling
+        # FIXED: Actually send the email synchronously
         try:
-            send_otp_email(email, code)
-            print(f"✅ OTP email sent successfully to {email}")
-            return Response({"detail": "OTP sent"})
-        except Exception as exc:
-            # Log the full error for debugging
-            print(f"❌ EMAIL SEND ERROR:")
-            print(f"   Error Type: {type(exc).__name__}")
-            print(f"   Error Message: {str(exc)}")
-            print(f"   Email: {email}")
-            print(f"   Code: {code}")
-            print(f"   OTP saved in database - retrieve manually for testing")
-            print("="*60)
+            subject = "Your TConnect Login OTP"
+            message = f"""
+Hello,
+
+Your One-Time Password (OTP) for logging into TConnect is: {code}
+
+This OTP is valid for 10 minutes.
+
+If you didn't request this OTP, please ignore this email.
+
+Best regards,
+TConnect Team
+            """.strip()
             
-            # Return success with note that email failed
-            # Frontend won't know email failed, OTP is in database for manual retrieval
+            result = send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            
+            print(f"✅ Email sent! Result: {result}")
+            return Response({"detail": "OTP sent successfully"})
+            
+        except Exception as exc:
+            print(f"❌ EMAIL ERROR: {type(exc).__name__}: {str(exc)}")
+            # Still return error so frontend knows
             return Response({
-                "detail": "OTP sent successfully",
-                "dev_note": "Check server logs for OTP code if email failed"
-            })
+                "detail": "Failed to send OTP email. Please try again.",
+                "error": str(exc)
+            }, status=500)
 
 
 # ---------------------------------------------------------

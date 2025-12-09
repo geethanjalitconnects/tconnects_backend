@@ -65,10 +65,10 @@ def set_auth_cookies(response, tokens):
 
 
 def clear_auth_cookies(response):
-    """Remove cookies on logout"""
-    response.delete_cookie("access", path="/", samesite="None", secure=True)
-    response.delete_cookie("refresh", path="/", samesite="None", secure=True)
+    response.delete_cookie("access", path="/")
+    response.delete_cookie("refresh", path="/")
     return response
+
 
 
 # ---------------------------------------------------------

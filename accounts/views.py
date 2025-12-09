@@ -289,3 +289,45 @@ class LogoutView(APIView):
     def post(self, request):
         response = Response({"detail": "Logged out"})
         return clear_auth_cookies(response)
+    
+class DebugView(APIView):
+    """
+    Debug endpoint to check CORS, cookies, and authentication
+    Access at: /api/auth/debug/
+    """
+    permission_classes = [permissions.AllowAny]
+    
+    def get(self, request):
+        # Collect debug information
+        debug_info = {
+            "message": "Debug endpoint - checking configuration",
+            "settings": {
+                "DEBUG": settings.DEBUG,
+                "CORS_ALLOW_ALL_ORIGINS": getattr(settings, 'CORS_ALLOW_ALL_ORIGINS', False),
+                "CORS_ALLOWED_ORIGINS": getattr(settings, 'CORS_ALLOWED_ORIGINS', []),
+                "CORS_ALLOW_CREDENTIALS": getattr(settings, 'CORS_ALLOW_CREDENTIALS', False),
+                "CSRF_TRUSTED_ORIGINS": getattr(settings, 'CSRF_TRUSTED_ORIGINS', []),
+                "SESSION_COOKIE_SECURE": settings.SESSION_COOKIE_SECURE,
+                "SESSION_COOKIE_SAMESITE": settings.SESSION_COOKIE_SAMESITE,
+            },
+            "request_info": {
+                "method": request.method,
+                "path": request.path,
+                "origin": request.headers.get('Origin', 'Not provided'),
+                "referer": request.headers.get('Referer', 'Not provided'),
+                "user_agent": request.headers.get('User-Agent', 'Not provided'),
+                "has_cookies": bool(request.COOKIES),
+                "cookies": list(request.COOKIES.keys()),
+                "is_authenticated": request.user.is_authenticated,
+            }
+        }
+        
+        # Check if user is authenticated
+        if request.user.is_authenticated:
+            debug_info["user"] = {
+                "email": request.user.email,
+                "full_name": getattr(request.user, 'full_name', 'N/A'),
+                "role": getattr(request.user, 'role', 'N/A'),
+            }
+        
+        return Response(debug_info)

@@ -74,7 +74,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'tconnects_backend.wsgi.application'
 
 # ===========================
-# MIDDLEWARE
+# MIDDLEWARE - CSRF STILL DISABLED BUT PROPERLY CONFIGURED
 # ===========================
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -82,6 +82,8 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    # CSRF DISABLED - This is why you're getting 403s on authenticated endpoints
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -89,19 +91,24 @@ MIDDLEWARE = [
 ]
 
 print("="*60)
-print("⚠️  CSRF MIDDLEWARE IS DISABLED FOR STAGING")
+print("⚠️  CSRF MIDDLEWARE IS DISABLED")
 print("="*60)
 
 # ===========================
-# CORS / COOKIES - FIXED FOR SAFARI
+# CORS CONFIGURATION - CRITICAL FIX
 # ===========================
 
+# MUST enable credentials for cookies to work
 CORS_ALLOW_CREDENTIALS = True
 
-# Parse CORS origins properly
+# Parse frontend URL properly
+_frontend_url = config('FRONTEND_URL', default='').strip()
+
+# Parse additional origins
 _env_origins_str = config("CORS_ALLOWED_ORIGINS", default="")
 _env_origins = [origin.strip() for origin in _env_origins_str.split(',') if origin.strip()]
 
+# Build CORS origins list
 if DEBUG:
     _dev_origins = [
         "http://localhost:5173",
@@ -109,34 +116,48 @@ if DEBUG:
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]
-    CORS_ALLOWED_ORIGINS = list(dict.fromkeys(_env_origins + _dev_origins))
+    # Combine: frontend URL + env origins + dev origins
+    all_origins = []
+    if _frontend_url:
+        all_origins.append(_frontend_url)
+    all_origins.extend(_env_origins)
+    all_origins.extend(_dev_origins)
+    CORS_ALLOWED_ORIGINS = list(dict.fromkeys(all_origins))  # Remove duplicates
 else:
-    CORS_ALLOWED_ORIGINS = _env_origins
+    # Production: frontend URL + env origins only
+    all_origins = []
+    if _frontend_url:
+        all_origins.append(_frontend_url)
+    all_origins.extend(_env_origins)
+    CORS_ALLOWED_ORIGINS = list(dict.fromkeys(all_origins))
 
-# CSRF trusted origins
-_csrf_origins_str = config("CSRF_TRUSTED_ORIGINS", default="")
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _csrf_origins_str.split(',') if origin.strip()]
+# CSRF trusted origins (same as CORS)
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS.copy()
 
-# Optional: allow all origins for testing
+# Optional: allow all origins for debugging
 ALLOW_ALL_CORS = config("ALLOW_ALL_CORS", default=False, cast=bool)
 if ALLOW_ALL_CORS:
     CORS_ALLOW_ALL_ORIGINS = True
     CORS_ALLOWED_ORIGINS = []
-    print("⚠️ WARNING: ALLOW_ALL_CORS is enabled!")
+    print("⚠️ WARNING: ALLOW_ALL_CORS is enabled! All origins allowed.")
 else:
     CORS_ALLOW_ALL_ORIGINS = False
 
+# Debug output
 print("="*60)
 print("🔍 CORS CONFIGURATION:")
-print(f"   DEBUG mode: {DEBUG}")
+print(f"   DEBUG: {DEBUG}")
+print(f"   FRONTEND_URL: {_frontend_url}")
+print(f"   ALLOW_ALL_CORS: {ALLOW_ALL_CORS}")
 print(f"   CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
 print(f"   CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}")
+print(f"   CORS_ALLOW_CREDENTIALS: {CORS_ALLOW_CREDENTIALS}")
 print("="*60)
 
-# CRITICAL: Extended CORS headers for Safari compatibility
+# CRITICAL: Comprehensive CORS headers for Safari/Chrome compatibility
 CORS_EXPOSE_HEADERS = [
-    "Content-Type", 
-    "X-CSRFToken", 
+    "Content-Type",
+    "X-CSRFToken",
     "Set-Cookie",
     "Access-Control-Allow-Credentials",
 ]
@@ -151,35 +172,29 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     "accept-encoding",
     "access-control-allow-origin",
     "access-control-allow-credentials",
+    "cookie",
 ]
 
-# FIXED: Proper cookie settings for Safari
+# Cookie settings - CRITICAL for authentication
 CSRF_COOKIE_HTTPONLY = False
 CSRF_HEADER_NAME = "X-CSRFToken"
-SESSION_COOKIE_HTTPONLY = True  # Changed to True for security
+SESSION_COOKIE_HTTPONLY = True
 
-# Cookie domain (leave empty for staging)
+# Cookie domain (None = same domain only)
 COOKIE_DOMAIN = config('COOKIE_DOMAIN', default=None)
 
-# CRITICAL: Safari requires these settings
-if DEBUG:
-    # STAGING - Use Lax for better compatibility
-    SESSION_COOKIE_SECURE = True  # Still use HTTPS
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SAMESITE = "None"  # Required for cross-origin
-    CSRF_COOKIE_SAMESITE = "None"
-    
-    # Additional Safari fixes
-    SECURE_CROSS_ORIGIN_OPENER_POLICY = None
-    
-else:
-    # PRODUCTION
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SAMESITE = "None"
-    CSRF_COOKIE_SAMESITE = "None"
+# Cookie security settings
+SESSION_COOKIE_SECURE = True  # HTTPS required
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "None"  # Required for cross-origin
+CSRF_COOKIE_SAMESITE = "None"
+
+# Additional security settings
+if not DEBUG:
     SECURE_SSL_REDIRECT = True
-    SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None  # Safari compatibility
 
 print("="*60)
 print("🍪 COOKIE SETTINGS:")
@@ -201,7 +216,7 @@ DATABASES = {
 }
 
 # ===========================
-# EMAIL SETTINGS - FIXED TIMEOUT
+# EMAIL SETTINGS
 # ===========================
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -211,7 +226,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
-EMAIL_TIMEOUT = 30  # Increased to 30 seconds
+EMAIL_TIMEOUT = 30
 
 print("="*60)
 print("📧 EMAIL CONFIGURATION:")
@@ -221,16 +236,19 @@ print(f"   EMAIL_TIMEOUT: {EMAIL_TIMEOUT}s")
 print("="*60)
 
 # ===========================
-# REST FRAMEWORK
+# REST FRAMEWORK - CRITICAL FIX
 # ===========================
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "accounts.authentication.CookieJWTAuthentication",
     ],
+    # IMPORTANT: Default to AllowAny, let views specify permissions
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
+    # Better error responses
+    "EXCEPTION_HANDLER": "rest_framework.views.exception_handler",
 }
 
 # JWT CONFIG

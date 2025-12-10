@@ -16,14 +16,31 @@ from internships.models import Internship
 # ============================================================
 
 def build_candidate_snapshot(user):
-    """
-    Fetch full candidate profile snapshot at apply time.
-    Used by both job & internship applications.
-    """
     try:
-        profile = user.candidate_profile  # CandidateProfile
+        profile = user.candidate_profile
     except CandidateProfile.DoesNotExist:
         raise serializers.ValidationError("Candidate profile not found. Complete your profile first.")
+
+    # ⭐ REQUIRED FIELD VALIDATION
+    missing_fields = []
+
+    if not user.full_name:
+        missing_fields.append("full name")
+    if not profile.phone_number:
+        missing_fields.append("phone number")
+    if not profile.location:
+        missing_fields.append("location")
+    if not profile.skills:
+        missing_fields.append("skills")
+    if not profile.bio:
+        missing_fields.append("bio")
+    if not profile.resume:
+        missing_fields.append("resume")
+
+    if missing_fields:
+        raise serializers.ValidationError(
+            f"Please complete your profile before applying. Missing: {', '.join(missing_fields)}"
+        )
 
     return {
         "candidate_full_name": user.full_name,
@@ -34,6 +51,7 @@ def build_candidate_snapshot(user):
         "candidate_bio": profile.bio,
         "candidate_resume_url": profile.resume.url if profile.resume else None,
     }
+
 
 
 # ============================================================

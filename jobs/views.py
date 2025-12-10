@@ -19,6 +19,7 @@ from .serializers import (
     JobCreateUpdateSerializer
 )
 import logging
+from accounts.permissions import IsRecruiter
 
 logger = logging.getLogger(__name__)
 
@@ -96,24 +97,13 @@ class JobDetailView(RetrieveAPIView):
 # ======================================================
 
 class JobCreateView(CreateAPIView):
-    permission_classes = [IsRecruiter]
+    queryset = Job.objects.all()
     serializer_class = JobCreateUpdateSerializer
+    permission_classes = [IsRecruiter]  # only recruiters can create
 
     def perform_create(self, serializer):
-        # Log request user and payload for debugging auth/permission issues
-        try:
-            logger.info(
-                "JobCreateView called by user=%s authenticated=%s role=%s data=%s",
-                getattr(self.request.user, 'email', None),
-                self.request.user.is_authenticated,
-                getattr(self.request.user, 'role', None),
-                dict(self.request.data)
-            )
-        except Exception:
-            logger.exception("Failed to log JobCreateView request info")
-
-        # DO NOT pass recruiter here. Serializer handles recruiter.
-        serializer.save()
+        # Attach the logged-in recruiter to the job
+        serializer.save(recruiter=self.request.user)
 
 
 # ======================================================

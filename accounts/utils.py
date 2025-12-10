@@ -10,18 +10,18 @@ def generate_otp():
 
 def send_otp_email(email, code):
     """Send OTP via email"""
-    subject = "Your TConnect Login OTP"
+    subject = "Your TConnects Login OTP"
     message = f"""
 Hello,
 
-Your One-Time Password (OTP) for logging into TConnect is: {code}
+Your One-Time Password (OTP) for logging into TConnects is: {code}
 
 This OTP is valid for 10 minutes.
 
 If you didn't request this OTP, please ignore this email.
 
 Best regards,
-TConnect Team
+TConnects Team
     """.strip()
     
     try:

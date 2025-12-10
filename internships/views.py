@@ -19,6 +19,7 @@ from .serializers import (
     InternshipCreateUpdateSerializer
 )
 import logging
+from accounts.permissions import IsRecruiter
 
 logger = logging.getLogger(__name__)
 
@@ -93,23 +94,13 @@ class InternshipDetailView(RetrieveAPIView):
 # ======================================================
 
 class InternshipCreateView(CreateAPIView):
-    permission_classes = [IsRecruiter]
+    queryset = Internship.objects.all()
     serializer_class = InternshipCreateUpdateSerializer
+    permission_classes = [IsRecruiter]  # only recruiters can create
 
     def perform_create(self, serializer):
-        # Log request user and payload for debugging auth/permission issues
-        try:
-            logger.info(
-                "InternshipCreateView called by user=%s authenticated=%s role=%s data=%s",
-                getattr(self.request.user, 'email', None),
-                self.request.user.is_authenticated,
-                getattr(self.request.user, 'role', None),
-                dict(self.request.data)
-            )
-        except Exception:
-            logger.exception("Failed to log InternshipCreateView request info")
-
-        serializer.save()   # ← FIXED HERE
+        # Attach recruiter to the internship posting
+        serializer.save(recruiter=self.request.user)
 
 
 

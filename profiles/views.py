@@ -443,10 +443,14 @@ class FreelancerPublicListView(APIView):
         result = []
         for basic in freelancers:
             professional = FreelancerProfessionalDetails.objects.filter(freelancer=basic).first()
+            availability = FreelancerAvailability.objects.filter(freelancer=basic).first()
+
             item = {
                 "basic": FreelancerBasicInfoSerializer(basic).data,
                 "professional": FreelancerProfessionalDetailsSerializer(professional).data if professional else None,
+                "availability": FreelancerAvailabilitySerializer(availability).data if availability else None,
             }
+
             result.append(item)
 
         return Response(result)

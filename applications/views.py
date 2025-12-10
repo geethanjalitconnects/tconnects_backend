@@ -281,3 +281,41 @@ class CandidateDashboardStatsView(APIView):
             "saved_internships": saved_internships,
             "ongoing_courses": ongoing_courses,
         })
+
+
+class RecruiterOverviewView(APIView):
+    """
+    GET /api/applications/recruiter/overview/
+    Returns aggregated counts for recruiter dashboard in one request.
+    """
+    permission_classes = [IsRecruiter]
+
+    def get(self, request):
+        user = request.user
+
+        # Jobs
+        jobs_qs = Job.objects.filter(recruiter=user)
+        total_jobs = jobs_qs.count()
+        active_jobs = jobs_qs.filter(is_active=True).count()
+
+        # Internships
+        internships_qs = Internship.objects.filter(recruiter=user)
+        total_internships = internships_qs.count()
+        active_internships = internships_qs.filter(is_active=True).count()
+
+        # Applications (all applicants for recruiter's posts)
+        job_apps = JobApplication.objects.filter(job__recruiter=user).count()
+        internship_apps = InternshipApplication.objects.filter(internship__recruiter=user).count()
+        total_applications = job_apps + internship_apps
+
+        # scheduled_jobs: not currently tracked centrally; return 0 for now
+        scheduled_jobs = 0
+
+        return Response({
+            "total_jobs": total_jobs,
+            "active_jobs": active_jobs,
+            "total_applications": total_applications,
+            "scheduled_jobs": scheduled_jobs,
+            "total_internships": total_internships,
+            "active_internships": active_internships,
+        })

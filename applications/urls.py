@@ -65,5 +65,7 @@ urlpatterns = [
     path("saved-internships/add/", AddSavedInternshipView.as_view(), name="saved-internships-add"),
     path("saved-internships/remove/<int:internship_id>/", RemoveSavedInternshipView.as_view(), name="saved-internships-remove"),
     path("dashboard/stats/", CandidateDashboardStatsView.as_view()),
+    # Recruiter overview (aggregated stats)
+    path("recruiter/overview/", RecruiterOverviewView.as_view(), name="recruiter-overview"),
 
 ]

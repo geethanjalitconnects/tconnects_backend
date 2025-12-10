@@ -230,9 +230,40 @@ class SavedJobSerializer(serializers.ModelSerializer):
             "location": obj.job.location,
             "created_at": obj.job.created_at,
         }
-# SavedInternship serializer returns full internship details nested
+# ---------------------- Internship Summary ----------------------
+
+class InternshipSummarySerializer(serializers.ModelSerializer):
+    company_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Internship
+        fields = ("id", "title", "company_name", "location", "posted_on")
+
+    def get_company_name(self, obj):
+        return getattr(obj, "company_name", "Company")
+
+
+# ---------------------- Internship Summary ----------------------
+
+class InternshipSummarySerializer(serializers.ModelSerializer):
+    company_name = serializers.SerializerMethodField()
+
+    # ⭐ Map posted_on → created_at
+    posted_on = serializers.DateTimeField(source="created_at", read_only=True)
+
+    class Meta:
+        model = Internship
+        fields = ("id", "title", "company_name", "location", "posted_on")
+
+    def get_company_name(self, obj):
+        return getattr(obj, "company_name", "Company")
+
+
+
+# ---------------------- Saved Internship ----------------------
+
 class SavedInternshipSerializer(serializers.ModelSerializer):
-    internship = serializers.SerializerMethodField()
+    internship = InternshipSummarySerializer(read_only=True)
     internship_id = serializers.PrimaryKeyRelatedField(
         write_only=True,
         queryset=Internship.objects.all(),
@@ -243,13 +274,3 @@ class SavedInternshipSerializer(serializers.ModelSerializer):
         model = SavedInternship
         fields = ("id", "internship", "internship_id", "saved_on")
         read_only_fields = ("id", "saved_on", "internship")
-
-    def get_internship(self, obj):
-        """Return full internship details (id, title, company_name, location, created_at)"""
-        return {
-            "id": obj.internship.id,
-            "title": obj.internship.title,
-            "company_name": getattr(obj.internship, "company_name", "Company"),
-            "location": obj.internship.location,
-            "created_at": obj.internship.created_at,
-        }

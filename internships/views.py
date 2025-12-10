@@ -18,6 +18,9 @@ from .serializers import (
     InternshipDetailSerializer,
     InternshipCreateUpdateSerializer
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # ======================================================
@@ -94,6 +97,18 @@ class InternshipCreateView(CreateAPIView):
     serializer_class = InternshipCreateUpdateSerializer
 
     def perform_create(self, serializer):
+        # Log request user and payload for debugging auth/permission issues
+        try:
+            logger.info(
+                "InternshipCreateView called by user=%s authenticated=%s role=%s data=%s",
+                getattr(self.request.user, 'email', None),
+                self.request.user.is_authenticated,
+                getattr(self.request.user, 'role', None),
+                dict(self.request.data)
+            )
+        except Exception:
+            logger.exception("Failed to log InternshipCreateView request info")
+
         serializer.save()   # ← FIXED HERE
 
 

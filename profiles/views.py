@@ -437,18 +437,25 @@ class DeleteFreelancerProfileView(APIView):
 # In profiles/views.py, replace FreelancerPublicListView with this:
 
 class FreelancerPublicListView(APIView):
+    """
+    GET /api/profiles/freelancers/
+    Returns list of all published freelancer profiles
+    """
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        # Get only published freelancers
         freelancers = FreelancerBasicInfo.objects.filter(is_published=True)
 
         result = []
         for basic in freelancers:
+            # Get related data
             professional = FreelancerProfessionalDetails.objects.filter(freelancer=basic).first()
             availability = FreelancerAvailability.objects.filter(freelancer=basic).first()
 
+            # Build response item
             item = {
-                "id": basic.id,  # ✅ ADD THIS LINE - This is the FreelancerBasicInfo ID
+                "id": basic.id,  # ✅ IMPORTANT: Include ID at root level
                 "user_id": basic.user.id,  # Also include user_id for reference
                 "basic": FreelancerBasicInfoSerializer(basic).data,
                 "professional": FreelancerProfessionalDetailsSerializer(professional).data if professional else None,
@@ -457,34 +464,44 @@ class FreelancerPublicListView(APIView):
 
             result.append(item)
 
-        return Response(result)
+        return Response(result, status=200)
 
 
+# ========================================
+# PUBLIC FREELANCER DETAIL (Single profile)
+# ========================================
 class FreelancerPublicDetailView(APIView):
+    """
+    GET /api/profiles/freelancers/<pk>/
+    Returns detailed view of a single published freelancer profile
+    """
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, pk):
+        # Try to get the freelancer
         try:
             basic = FreelancerBasicInfo.objects.get(id=pk, is_published=True)
         except FreelancerBasicInfo.DoesNotExist:
-            return Response({"error": "Freelancer not found"}, status=404)
+            return Response({
+                "error": "Freelancer profile not found or not published"
+            }, status=404)
 
+        # Get all related data
         professional = FreelancerProfessionalDetails.objects.filter(freelancer=basic).first()
         availability = FreelancerAvailability.objects.filter(freelancer=basic).first()
         education = FreelancerEducation.objects.filter(freelancer=basic)
-        payments = FreelancerPaymentMethod.objects.filter(freelancer=basic)
         social = FreelancerSocialLinks.objects.filter(freelancer=basic).first()
+        
+        # Get payment methods but HIDE sensitive data for public view
+        payments = FreelancerPaymentMethod.objects.filter(freelancer=basic)
+        payment_types = [p.payment_type for p in payments]  # Only show types, not details
 
-        ratings = social.ratings if social and hasattr(social, "ratings") else []
-        badges = social.badges if social and hasattr(social, "badges") else []
-
+        # Build complete response
         return Response({
             "basic": FreelancerBasicInfoSerializer(basic).data,
             "professional": FreelancerProfessionalDetailsSerializer(professional).data if professional else None,
             "availability": FreelancerAvailabilitySerializer(availability).data if availability else None,
             "education": FreelancerEducationSerializer(education, many=True).data,
-            "payments": FreelancerPaymentMethodSerializer(payments, many=True).data,
             "social": FreelancerSocialLinksSerializer(social).data if social else None,
-            "ratings": ratings,
-            "badges": badges,
-        })
+            "payment_types": payment_types,  # Only show "UPI", "Bank Transfer", etc.
+        }, status=200)

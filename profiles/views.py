@@ -434,6 +434,8 @@ class DeleteFreelancerProfileView(APIView):
 # ----------------------------------------
 # PUBLIC LIST + PUBLIC DETAIL
 # ----------------------------------------
+# In profiles/views.py, replace FreelancerPublicListView with this:
+
 class FreelancerPublicListView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -446,6 +448,8 @@ class FreelancerPublicListView(APIView):
             availability = FreelancerAvailability.objects.filter(freelancer=basic).first()
 
             item = {
+                "id": basic.id,  # ✅ ADD THIS LINE - This is the FreelancerBasicInfo ID
+                "user_id": basic.user.id,  # Also include user_id for reference
                 "basic": FreelancerBasicInfoSerializer(basic).data,
                 "professional": FreelancerProfessionalDetailsSerializer(professional).data if professional else None,
                 "availability": FreelancerAvailabilitySerializer(availability).data if availability else None,

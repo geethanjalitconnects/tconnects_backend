@@ -12,7 +12,7 @@ from internships.models import Internship
 
 
 # ============================================================
-# UTIL — Fetch Candidate Snapshot
+# UTIL – Fetch Candidate Snapshot
 # ============================================================
 
 def build_candidate_snapshot(user):
@@ -55,7 +55,7 @@ def build_candidate_snapshot(user):
 
 
 # ============================================================
-# JOB APPLICATION — CREATE
+# JOB APPLICATION – CREATE
 # ============================================================
 
 class JobApplicationCreateSerializer(serializers.ModelSerializer):
@@ -97,28 +97,37 @@ class JobApplicationCreateSerializer(serializers.ModelSerializer):
 
 
 # ============================================================
-# JOB APPLICATION — VIEW (DETAIL)
+# JOB APPLICATION – VIEW (DETAIL) - FOR RECRUITER
 # ============================================================
 
 class JobApplicationSerializer(serializers.ModelSerializer):
     job_id = serializers.IntegerField(source="job.id", read_only=True)
     job_title = serializers.CharField(source="job.title", read_only=True)
     company_name = serializers.CharField(source="job.company_name", read_only=True)
+    
+    # ⭐ Map database fields to frontend expected names
+    full_name = serializers.CharField(source="candidate_full_name", read_only=True)
+    email = serializers.CharField(source="candidate_email", read_only=True)
+    phone_number = serializers.CharField(source="candidate_phone", read_only=True)
+    location = serializers.CharField(source="candidate_location", read_only=True)
+    skills = serializers.JSONField(source="candidate_skills", read_only=True)
+    bio = serializers.CharField(source="candidate_bio", read_only=True)
+    resume = serializers.CharField(source="candidate_resume_url", read_only=True)
 
     class Meta:
         model = JobApplication
         fields = [
             "id",
-            "job_id",  # ⭐ added for applied status check
+            "job_id",
             "job_title",
             "company_name",
-            "candidate_full_name",
-            "candidate_email",
-            "candidate_phone",
-            "candidate_location",
-            "candidate_skills",
-            "candidate_bio",
-            "candidate_resume_url",
+            "full_name",
+            "email",
+            "phone_number",
+            "location",
+            "skills",
+            "bio",
+            "resume",
             "cover_letter",
             "status",
             "created_at",
@@ -128,7 +137,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
 
 
 # ============================================================
-# JOB APPLICATION — RECRUITER UPDATE STATUS
+# JOB APPLICATION – RECRUITER UPDATE STATUS
 # ============================================================
 
 class JobApplicationStatusUpdateSerializer(serializers.ModelSerializer):
@@ -144,7 +153,7 @@ class JobApplicationStatusUpdateSerializer(serializers.ModelSerializer):
 
 
 # ============================================================
-# INTERNSHIP APPLICATION — CREATE
+# INTERNSHIP APPLICATION – CREATE
 # ============================================================
 
 class InternshipApplicationCreateSerializer(serializers.ModelSerializer):
@@ -186,26 +195,37 @@ class InternshipApplicationCreateSerializer(serializers.ModelSerializer):
 
 
 # ============================================================
-# INTERNSHIP APPLICATION — VIEW (DETAIL)
+# INTERNSHIP APPLICATION – VIEW (DETAIL) - FOR RECRUITER
 # ============================================================
 
 class InternshipApplicationSerializer(serializers.ModelSerializer):
+    internship_id = serializers.IntegerField(source="internship.id", read_only=True)
     internship_title = serializers.CharField(source="internship.title", read_only=True)
     company_name = serializers.CharField(source="internship.company_name", read_only=True)
+    
+    # ⭐ Map database fields to frontend expected names
+    full_name = serializers.CharField(source="candidate_full_name", read_only=True)
+    email = serializers.CharField(source="candidate_email", read_only=True)
+    phone_number = serializers.CharField(source="candidate_phone", read_only=True)
+    location = serializers.CharField(source="candidate_location", read_only=True)
+    skills = serializers.JSONField(source="candidate_skills", read_only=True)
+    bio = serializers.CharField(source="candidate_bio", read_only=True)
+    resume = serializers.CharField(source="candidate_resume_url", read_only=True)
 
     class Meta:
         model = InternshipApplication
         fields = [
             "id",
+            "internship_id",
             "internship_title",
             "company_name",
-            "candidate_full_name",
-            "candidate_email",
-            "candidate_phone",
-            "candidate_location",
-            "candidate_skills",
-            "candidate_bio",
-            "candidate_resume_url",
+            "full_name",
+            "email",
+            "phone_number",
+            "location",
+            "skills",
+            "bio",
+            "resume",
             "cover_letter",
             "status",
             "created_at",
@@ -214,7 +234,7 @@ class InternshipApplicationSerializer(serializers.ModelSerializer):
 
 
 # ============================================================
-# INTERNSHIP APPLICATION — RECRUITER UPDATE STATUS
+# INTERNSHIP APPLICATION – RECRUITER UPDATE STATUS
 # ============================================================
 
 class InternshipApplicationStatusUpdateSerializer(serializers.ModelSerializer):
@@ -227,7 +247,12 @@ class InternshipApplicationStatusUpdateSerializer(serializers.ModelSerializer):
         instance.status_updated_at = timezone.now()
         instance.save()
         return instance
-# SavedJob serializer returns full job details nested
+
+
+# ============================================================
+# SAVED JOBS
+# ============================================================
+
 class SavedJobSerializer(serializers.ModelSerializer):
     job = serializers.SerializerMethodField()
     job_id = serializers.PrimaryKeyRelatedField(
@@ -248,25 +273,14 @@ class SavedJobSerializer(serializers.ModelSerializer):
             "location": obj.job.location,
             "created_at": obj.job.created_at,
         }
-# ---------------------- Internship Summary ----------------------
+
+
+# ============================================================
+# SAVED INTERNSHIPS
+# ============================================================
 
 class InternshipSummarySerializer(serializers.ModelSerializer):
     company_name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Internship
-        fields = ("id", "title", "company_name", "location", "posted_on")
-
-    def get_company_name(self, obj):
-        return getattr(obj, "company_name", "Company")
-
-
-# ---------------------- Internship Summary ----------------------
-
-class InternshipSummarySerializer(serializers.ModelSerializer):
-    company_name = serializers.SerializerMethodField()
-
-    # ⭐ Map posted_on → created_at
     posted_on = serializers.DateTimeField(source="created_at", read_only=True)
 
     class Meta:
@@ -276,9 +290,6 @@ class InternshipSummarySerializer(serializers.ModelSerializer):
     def get_company_name(self, obj):
         return getattr(obj, "company_name", "Company")
 
-
-
-# ---------------------- Saved Internship ----------------------
 
 class SavedInternshipSerializer(serializers.ModelSerializer):
     internship = InternshipSummarySerializer(read_only=True)

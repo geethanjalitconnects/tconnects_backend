@@ -12,7 +12,8 @@ from .views import (
     RecruiterInternshipApplicantsView,
 
     UpdateJobApplicationStatusView,
-    UpdateInternshipApplicationStatusView
+    UpdateInternshipApplicationStatusView,
+    RecruiterOverviewView
     
     
 )

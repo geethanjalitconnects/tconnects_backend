@@ -100,6 +100,11 @@ if DEBUG:
 # ===========================
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://tconnects\.in$",
+    r"^https://www\.tconnects\.in$",
+]
+
 
 # Parse frontend URL
 _frontend_url = config('FRONTEND_URL', default='').strip()

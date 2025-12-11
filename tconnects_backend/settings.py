@@ -292,6 +292,7 @@ REST_FRAMEWORK = {
 
 # JWT CONFIG - Enhanced for Safari
 # JWT CONFIG - Enhanced for Safari
+# In settings.py, update SIMPLE_JWT:
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('ACCESS_TOKEN_MINUTES', default=60, cast=int)),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=config('REFRESH_TOKEN_DAYS', default=14, cast=int)),
@@ -302,6 +303,15 @@ SIMPLE_JWT = {
     'SIGNING_KEY': SECRET_KEY,
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    
+    # ADD THESE FOR COOKIE-BASED JWT:
+    'AUTH_COOKIE': 'access_token',  # Cookie name for access token
+    'AUTH_COOKIE_REFRESH': 'refresh_token',  # Cookie name for refresh token
+    'AUTH_COOKIE_DOMAIN': config('COOKIE_DOMAIN', default=None),
+    'AUTH_COOKIE_SECURE': not DEBUG,  # True in production
+    'AUTH_COOKIE_HTTP_ONLY': True,  # Important for security
+    'AUTH_COOKIE_PATH': '/',
+    'AUTH_COOKIE_SAMESITE': 'None' if not DEBUG else 'Lax',
 }
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'

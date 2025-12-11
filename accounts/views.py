@@ -393,17 +393,15 @@ class GoogleLoginView(APIView):
 
 
 # ---------------------------------------------------------
-# CURRENT LOGGED-IN USER - SAFARI OPTIMIZED
+# CURRENT LOGGED-IN USER - FIXED DATA STRUCTURE
 # ---------------------------------------------------------
 
 class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        response = Response({
-            "user": UserSerializer(request.user).data,
-            "authenticated": True
-        })
+        # ✅ FIXED: Return user data directly (not wrapped in "user" key)
+        response = Response(UserSerializer(request.user).data)
         
         # Add CORS headers for Safari
         origin = request.headers.get('Origin', settings.FRONTEND_URL)
@@ -414,13 +412,14 @@ class MeView(APIView):
 
 
 # ---------------------------------------------------------
-# CHECK AUTH STATUS - NEW ENDPOINT FOR SAFARI
+# CHECK AUTH STATUS - BETTER FOR INITIAL LOAD
 # ---------------------------------------------------------
 
 class CheckAuthView(APIView):
     """
     Check if user is authenticated - useful for Safari cookie verification
     Access at: /api/auth/check/
+    ✅ FIXED: AllowAny so it doesn't fail when not authenticated
     """
     permission_classes = [permissions.AllowAny]
     
@@ -445,7 +444,7 @@ class CheckAuthView(APIView):
 
 
 # ---------------------------------------------------------
-# REFRESH TOKEN - NEW ENDPOINT FOR SAFARI
+# REFRESH TOKEN - SAFARI OPTIMIZED
 # ---------------------------------------------------------
 
 class RefreshTokenView(APIView):
@@ -545,7 +544,7 @@ class LogoutView(APIView):
                 print("✅ Refresh token blacklisted")
         except Exception as e:
             # Token might be invalid or already blacklisted - that's okay
-            print(f"⚠️  Token blacklist warning: {str(e)}")
+            print(f"⚠️ Token blacklist warning: {str(e)}")
         
         response = Response({
             "detail": "Logged out successfully",

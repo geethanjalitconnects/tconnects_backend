@@ -1,5 +1,6 @@
+# accounts/urls.py
+
 from django.urls import path
-from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     RegisterView,
     PasswordLoginView,
@@ -7,33 +8,34 @@ from .views import (
     VerifyOTPView,
     GoogleLoginView,
     MeView,
-    LogoutView
+    LogoutView,
+    CheckAuthView,
+    RefreshTokenView,
+    DebugView,
 )
 
-app_name = 'accounts'
-
 urlpatterns = [
-    # Registration
+    # Registration & Login
     path('register/', RegisterView.as_view(), name='register'),
-    
-    # Password Login
-    path('login/', PasswordLoginView.as_view(), name='login'),
+    path('login/', PasswordLoginView.as_view(), name='password-login'),
     
     # OTP Authentication
     path('send-otp/', SendOTPView.as_view(), name='send-otp'),
     path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
     
     # Google OAuth
-    path('google/login/', GoogleLoginView.as_view(), name='google-login'),
-    # ❌ Removed google/complete (No longer needed)
-
+    path('google/', GoogleLoginView.as_view(), name='google-login'),
+    
     # User Info
     path('me/', MeView.as_view(), name='me'),
+    
+    # Auth Status & Token Management (NEW - Safari support)
+    path('check/', CheckAuthView.as_view(), name='check-auth'),
+    path('refresh/', RefreshTokenView.as_view(), name='refresh-token'),
     
     # Logout
     path('logout/', LogoutView.as_view(), name='logout'),
     
-    
-    # Token Refresh (not used in cookie auth but safe to keep)
-    path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+    # Debug (can remove in production)
+    path('debug/', DebugView.as_view(), name='debug'),
 ]

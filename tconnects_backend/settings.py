@@ -8,7 +8,7 @@ from corsheaders.defaults import default_headers
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
-DEBUG = config("DEBUG", default=True, cast=bool)
+DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
 
@@ -90,12 +90,13 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
-print("="*60)
-print("⚠️  CSRF MIDDLEWARE IS DISABLED")
-print("="*60)
+if DEBUG:
+    print("="*60)
+    print("⚠️  CSRF MIDDLEWARE IS DISABLED")
+    print("="*60)
 
 # ===========================
-# CORS CONFIGURATION
+# CORS CONFIGURATION - OPTIMIZED FOR SAFARI
 # ===========================
 
 CORS_ALLOW_CREDENTIALS = True
@@ -134,22 +135,24 @@ CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS.copy()
 # CRITICAL: Don't use ALLOW_ALL_CORS - causes cookie issues
 CORS_ALLOW_ALL_ORIGINS = False
 
-print("="*60)
-print("🔍 CORS CONFIGURATION:")
-print(f"   DEBUG: {DEBUG}")
-print(f"   FRONTEND_URL: {_frontend_url}")
-print(f"   CORS_ALLOW_ALL_ORIGINS: {CORS_ALLOW_ALL_ORIGINS}")
-print(f"   CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
-print(f"   CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}")
-print(f"   CORS_ALLOW_CREDENTIALS: {CORS_ALLOW_CREDENTIALS}")
-print("="*60)
+if DEBUG:
+    print("="*60)
+    print("🔒 CORS CONFIGURATION:")
+    print(f"   DEBUG: {DEBUG}")
+    print(f"   FRONTEND_URL: {_frontend_url}")
+    print(f"   CORS_ALLOW_ALL_ORIGINS: {CORS_ALLOW_ALL_ORIGINS}")
+    print(f"   CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
+    print(f"   CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}")
+    print(f"   CORS_ALLOW_CREDENTIALS: {CORS_ALLOW_CREDENTIALS}")
+    print("="*60)
 
-# CORS headers for Safari/Chrome compatibility
+# CORS headers - ENHANCED for Safari compatibility
 CORS_EXPOSE_HEADERS = [
     "Content-Type",
     "X-CSRFToken",
     "Set-Cookie",
     "Access-Control-Allow-Credentials",
+    "Access-Control-Allow-Origin",
 ]
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
@@ -163,10 +166,15 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     "access-control-allow-origin",
     "access-control-allow-credentials",
     "cookie",
+    "cache-control",
+    "pragma",
 ]
 
+# Safari requires preflight caching
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
+
 # ===========================
-# COOKIE SETTINGS - CRITICAL
+# COOKIE SETTINGS - SAFARI/iOS OPTIMIZED
 # ===========================
 
 # CSRF settings
@@ -176,31 +184,59 @@ CSRF_HEADER_NAME = "X-CSRFToken"
 # Session settings
 SESSION_COOKIE_HTTPONLY = True
 
-# Cookie domain (None = same-site only)
+# Cookie domain - CRITICAL for Safari on subdomains
 COOKIE_DOMAIN = config('COOKIE_DOMAIN', default=None)
 
-# CRITICAL: Cookie security for cross-origin
-# These settings are REQUIRED for cookies to work across domains
-SESSION_COOKIE_SECURE = True      # HTTPS only
-CSRF_COOKIE_SECURE = True         # HTTPS only
-SESSION_COOKIE_SAMESITE = "None"  # Allow cross-origin
-CSRF_COOKIE_SAMESITE = "None"     # Allow cross-origin
-
-# Additional security
 if not DEBUG:
+    # PRODUCTION: Safari-compatible settings
+    # SameSite=None with Secure=True is REQUIRED for Safari cross-site cookies
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = "None"
+    CSRF_COOKIE_SAMESITE = "None"
+    
+    # Set cookie domain for subdomain sharing
+    if COOKIE_DOMAIN:
+        SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
+        CSRF_COOKIE_DOMAIN = COOKIE_DOMAIN
+    
+    # Cookie age - Safari respects these
+    SESSION_COOKIE_AGE = 1209600  # 2 weeks
+    SESSION_SAVE_EVERY_REQUEST = False  # Don't update session on every request
+    
+    # Additional security
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+else:
+    # DEVELOPMENT: More permissive settings
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_AGE = 1209600
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 
-print("="*60)
-print("🍪 COOKIE SETTINGS:")
-print(f"   SESSION_COOKIE_SECURE: {SESSION_COOKIE_SECURE}")
-print(f"   SESSION_COOKIE_SAMESITE: {SESSION_COOKIE_SAMESITE}")
-print(f"   CSRF_COOKIE_SECURE: {CSRF_COOKIE_SECURE}")
-print(f"   CSRF_COOKIE_SAMESITE: {CSRF_COOKIE_SAMESITE}")
-print(f"   COOKIE_DOMAIN: {COOKIE_DOMAIN}")
-print("="*60)
+# Safari cookie name must be explicit (no generic names)
+SESSION_COOKIE_NAME = 'tconnects_sessionid'
+CSRF_COOKIE_NAME = 'tconnects_csrftoken'
+
+if DEBUG:
+    print("="*60)
+    print("🍪 COOKIE SETTINGS (Safari Optimized):")
+    print(f"   SESSION_COOKIE_SECURE: {SESSION_COOKIE_SECURE}")
+    print(f"   SESSION_COOKIE_SAMESITE: {SESSION_COOKIE_SAMESITE}")
+    print(f"   SESSION_COOKIE_NAME: {SESSION_COOKIE_NAME}")
+    print(f"   CSRF_COOKIE_SECURE: {CSRF_COOKIE_SECURE}")
+    print(f"   CSRF_COOKIE_SAMESITE: {CSRF_COOKIE_SAMESITE}")
+    print(f"   CSRF_COOKIE_NAME: {CSRF_COOKIE_NAME}")
+    print(f"   COOKIE_DOMAIN: {COOKIE_DOMAIN}")
+    print(f"   SESSION_COOKIE_AGE: {SESSION_COOKIE_AGE}s")
+    print("="*60)
 
 # ===========================
 # DATABASE
@@ -219,20 +255,21 @@ DATABASES = {
 # ===========================
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 EMAIL_TIMEOUT = 30
 
-print("="*60)
-print("📧 EMAIL CONFIGURATION:")
-print(f"   EMAIL_HOST: {EMAIL_HOST}")
-print(f"   EMAIL_HOST_USER: {EMAIL_HOST_USER}")
-print(f"   EMAIL_TIMEOUT: {EMAIL_TIMEOUT}s")
-print("="*60)
+if DEBUG:
+    print("="*60)
+    print("📧 EMAIL CONFIGURATION:")
+    print(f"   EMAIL_HOST: {EMAIL_HOST}")
+    print(f"   EMAIL_HOST_USER: {EMAIL_HOST_USER}")
+    print(f"   EMAIL_TIMEOUT: {EMAIL_TIMEOUT}s")
+    print("="*60)
 
 # ===========================
 # REST FRAMEWORK
@@ -248,10 +285,11 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "rest_framework.views.exception_handler",
 }
 
-# JWT CONFIG
+# JWT CONFIG - Enhanced for Safari
+# JWT CONFIG - Enhanced for Safari
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('ACCESS_TOKEN_MINUTES', default=60, cast=int)),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=config('REFRESH_TOKEN_DAYS', default=7, cast=int)),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=config('REFRESH_TOKEN_DAYS', default=14, cast=int)),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
@@ -260,7 +298,6 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
 }
-
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
